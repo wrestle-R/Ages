@@ -28,7 +28,7 @@ function App() {
 
   const fetchHealth = async () => {
     try {
-      const res = await fetch("http://127.0.0.1:8080/health");
+      const res = await fetch("https://ages-5g4e.onrender.com/health");
       if (!res.ok) {
         setHealth({ status: "unhealthy", ok: false });
         return;

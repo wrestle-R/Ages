@@ -9,42 +9,66 @@ function App() {
   const [burstTriggered, setBurstTriggered] = useState(false);
   const [burstComplete, setBurstComplete] = useState(false);
   const sawUnhealthyRef = useRef(false);
-
-  // New refs to ensure single handling and to control the polling interval
   const burstHandledRef = useRef(false);
   const intervalRef = useRef(null);
 
   const fetchAges = async () => {
     try {
       const res = await fetch("https://ages-5g4e.onrender.com/api/age");
-      if (!res.ok) return;
-      const data = await res.json().catch(() => null);
-      if (data?.error) return;
+      console.log("[fetchAges] response:", res);
+
+      if (!res.ok) {
+        console.error("[fetchAges] fetch failed with status", res.status);
+        return;
+      }
+
+      const data = await res.json().catch((e) => {
+        console.error("[fetchAges] json parse error:", e);
+        return null;
+      });
+
+      console.log("[fetchAges] data:", data);
+
+      if (data?.error) {
+        console.error("[fetchAges] backend returned error:", data.error);
+        return;
+      }
+
       if (data) setAges(data);
     } catch (e) {
-      // silent
+      console.error("[fetchAges] fetch exception:", e);
     }
   };
 
   const fetchHealth = async () => {
     try {
       const res = await fetch("https://ages-5g4e.onrender.com/health");
+      console.log("[fetchHealth] response:", res);
+
       if (!res.ok) {
+        console.error("[fetchHealth] fetch failed with status", res.status);
         setHealth({ status: "unhealthy", ok: false });
         return;
       }
-      const data = await res.json().catch(() => null);
+
+      const data = await res.json().catch((e) => {
+        console.error("[fetchHealth] json parse error:", e);
+        return null;
+      });
+
+      console.log("[fetchHealth] data:", data);
+
       setHealth({
         status: data?.status || "healthy",
         ok: true,
       });
     } catch (e) {
+      console.error("[fetchHealth] fetch exception:", e);
       setHealth({ status: "down", ok: false });
     }
   };
 
   useEffect(() => {
-    // initial fetch + start polling
     fetchAges();
     fetchHealth();
     intervalRef.current = setInterval(() => {
@@ -53,14 +77,11 @@ function App() {
     }, 2500);
 
     return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      intervalRef.current = null;
     };
   }, []);
 
-  // Guarded effect: trigger the burst only once when backend transitions to healthy
   useEffect(() => {
     if (burstHandledRef.current) return;
 
@@ -69,15 +90,11 @@ function App() {
       return;
     }
 
-    // backend is healthy
     if (sawUnhealthyRef.current && !burstTriggered) {
       setBurstTriggered(true);
-      // don't mark handled here — wait until onComplete to avoid race
     } else if (!sawUnhealthyRef.current) {
-      // backend was already healthy
       setBurstComplete(true);
       burstHandledRef.current = true;
-      // stop polling if already complete
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
@@ -85,7 +102,6 @@ function App() {
     }
   }, [health, burstTriggered]);
 
-  // stop polling when burst completes (safety)
   useEffect(() => {
     if (burstComplete && intervalRef.current) {
       clearInterval(intervalRef.current);
@@ -93,7 +109,6 @@ function App() {
     }
   }, [burstComplete]);
 
-  // handle reveal and ensure burst is marked handled
   const handleBurstComplete = () => {
     burstHandledRef.current = true;
     if (intervalRef.current) {
@@ -126,7 +141,9 @@ function App() {
       className="bg-black text-white h-screen p-4 font-mono"
     >
       <div className="mb-4 text-sm">
-        <span className={health.ok ? "text-green-400" : "text-red-400"}>{health.status}</span>
+        <span className={health.ok ? "text-green-400" : "text-red-400"}>
+          {health.status}
+        </span>
       </div>
 
       <div className="space-y-8">
@@ -135,10 +152,12 @@ function App() {
             <div className="text-xl mb-2 text-white">{name}</div>
             <div className="text-sm space-y-1">
               <div className="text-green-400">
-                {age.years}Y {age.months}M {age.weeks}W {age.days}D {age.hours}H {age.minutes}MIN {age.seconds}S
+                {age.years}Y {age.months}M {age.weeks}W {age.days}D {age.hours}H{" "}
+                {age.minutes}MIN {age.seconds}S
               </div>
               <div className="opacity-60 text-blue-300">
-                {age.total_months}M {age.total_weeks}W {age.total_minutes}MIN {age.total_seconds}S
+                {age.total_months}M {age.total_weeks}W {age.total_minutes}MIN{" "}
+                {age.total_seconds}S
               </div>
             </div>
           </div>

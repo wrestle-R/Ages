@@ -16,7 +16,7 @@ function App() {
 
   const fetchAges = async () => {
     try {
-      const res = await fetch("http://127.0.0.1:8080/api/age");
+      const res = await fetch("https://ages-5g4e.onrender.com/api/age");
       if (!res.ok) return;
       const data = await res.json().catch(() => null);
       if (data?.error) return;

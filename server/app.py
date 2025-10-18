@@ -1,14 +1,13 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from flask_cors import CORS
-from datetime import datetime
+from datetime import datetime, timedelta
 import calendar
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from dotenv import load_dotenv
 import os
-from apscheduler.schedulers.background import BackgroundScheduler
-import pytz
+import json
 
 # Load environment variables
 load_dotenv()
@@ -28,6 +27,31 @@ EMAIL_ADDRESS = os.getenv('EMAIL_ADDRESS')
 EMAIL_PASSWORD = os.getenv('EMAIL_PASSWORD')
 SMTP_HOST = os.getenv('SMTP_HOST')
 SMTP_PORT = int(os.getenv('SMTP_PORT', 587))
+
+# File to store last run timestamp
+LAST_RUN_FILE = 'last_run.json'
+
+def get_last_run_time():
+    """Get the last time birthday emails were checked"""
+    try:
+        if os.path.exists(LAST_RUN_FILE):
+            with open(LAST_RUN_FILE, 'r') as f:
+                data = json.load(f)
+                return datetime.fromisoformat(data['last_run'])
+        else:
+            # If file doesn't exist, assume last run was 15 minutes ago
+            return datetime.now() - timedelta(minutes=15)
+    except Exception as e:
+        print(f"Error reading last run time: {e}")
+        return datetime.now() - timedelta(minutes=15)
+
+def set_last_run_time(timestamp):
+    """Save the last run timestamp"""
+    try:
+        with open(LAST_RUN_FILE, 'w') as f:
+            json.dump({'last_run': timestamp.isoformat()}, f)
+    except Exception as e:
+        print(f"Error saving last run time: {e}")
 
 def send_email(to_email, subject, body):
     """Send an email using Gmail SMTP"""
@@ -93,34 +117,73 @@ def get_birthday_email_html(name, is_exact_time=False):
         """
 
 def check_and_send_birthday_emails():
-    """Check if it's anyone's birthday and send appropriate emails"""
-    now = datetime.now()
-    current_date = now.strftime("%m-%d")
-    current_time = now.strftime("%H:%M")
+    """
+    Check if it's anyone's birthday and send appropriate emails.
+    Uses interval-based checking to ensure no emails are missed.
+    """
+    current_time = datetime.now()
+    last_run_time = get_last_run_time()
     
-    print(f"Checking birthdays at {now}")
+    print(f"Checking birthdays from {last_run_time} to {current_time}")
+    
+    emails_sent = []
     
     for name, info in birthdays.items():
         birth_date = info['date']
         birth_time = info['time']
         email = info['email']
         
-        # Extract month and day from birth date
-        birth_month_day = birth_date[5:]  # Gets MM-DD from YYYY-MM-DD
+        # Parse birth date and time
+        birth_parts = birth_date.split("-")
+        time_parts = birth_time.split(":")
+        
+        birth_month = int(birth_parts[1])
+        birth_day = int(birth_parts[2])
+        birth_hour = int(time_parts[0])
+        birth_minute = int(time_parts[1])
         
         # Check if today is their birthday
-        if birth_month_day == current_date:
-            # Send midnight birthday email at 00:00
-            if current_time == "00:00":
+        if current_time.month == birth_month and current_time.day == birth_day:
+            
+            # Create midnight timestamp for today
+            midnight_today = current_time.replace(hour=0, minute=0, second=0, microsecond=0)
+            
+            # Create exact birth time timestamp for today
+            birth_time_today = current_time.replace(
+                hour=birth_hour, 
+                minute=birth_minute, 
+                second=0, 
+                microsecond=0
+            )
+            
+            # Check if midnight birthday email should be sent
+            # Send if midnight falls within the interval [last_run_time, current_time]
+            if last_run_time < midnight_today <= current_time:
                 subject = f"🎉 Happy Birthday {name}!"
                 body = get_birthday_email_html(name, is_exact_time=False)
-                send_email(email, subject, body)
+                if send_email(email, subject, body):
+                    emails_sent.append({
+                        "name": name,
+                        "type": "midnight",
+                        "time": midnight_today.isoformat()
+                    })
             
-            # Send exact birth time email
-            if current_time == birth_time:
+            # Check if exact birth time email should be sent
+            # Send if birth time falls within the interval [last_run_time, current_time]
+            if last_run_time < birth_time_today <= current_time:
                 subject = f"🎂 {name} - This is Your Exact Birth Moment!"
                 body = get_birthday_email_html(name, is_exact_time=True)
-                send_email(email, subject, body)
+                if send_email(email, subject, body):
+                    emails_sent.append({
+                        "name": name,
+                        "type": "exact_time",
+                        "time": birth_time_today.isoformat()
+                    })
+    
+    # Update last run time
+    set_last_run_time(current_time)
+    
+    return emails_sent
 
 birthdays = {
     "Aliqyaan": {
@@ -286,18 +349,94 @@ def health():
     except Exception as e:
         return jsonify({"status": "unhealthy", "error": str(e)}), 500
 
-if __name__ == "__main__":
-    # Initialize scheduler for birthday emails
-    scheduler = BackgroundScheduler()
-    # Check for birthdays every minute
-    scheduler.add_job(func=check_and_send_birthday_emails, trigger="interval", minutes=1)
-    scheduler.start()
-    
-    print("Birthday email scheduler started!")
-    print(f"Email sender: {EMAIL_ADDRESS}")
-    
+@app.route("/api/send-birthday-emails", methods=['GET', 'POST'])
+def send_birthday_emails_endpoint():
+    """
+    Endpoint to trigger birthday email checking.
+    Called by GitHub Actions cron job or manually.
+    """
     try:
-        app.run(debug=True, host="0.0.0.0", port=8080)
-    except (KeyboardInterrupt, SystemExit):
-        scheduler.shutdown()
-        print("Scheduler shut down")
+        # Optional API key authentication
+        api_key = request.headers.get('X-API-Key') or request.args.get('api_key')
+        expected_api_key = os.getenv('API_KEY')
+        
+        # If API_KEY is set in environment, require it
+        if expected_api_key and api_key != expected_api_key:
+            return jsonify({
+                "error": "Unauthorized",
+                "message": "Invalid or missing API key"
+            }), 401
+        
+        emails_sent = check_and_send_birthday_emails()
+        
+        return jsonify({
+            "status": "success",
+            "message": f"Birthday check completed. {len(emails_sent)} email(s) sent.",
+            "emails_sent": emails_sent,
+            "timestamp": datetime.now().isoformat()
+        })
+    except Exception as e:
+        print(f"Error in send_birthday_emails_endpoint: {str(e)}")
+        return jsonify({
+            "status": "error",
+            "message": str(e),
+            "timestamp": datetime.now().isoformat()
+        }), 500
+
+@app.route("/api/test-email", methods=['GET', 'POST'])
+def test_email_endpoint():
+    """
+    Test endpoint to verify email configuration.
+    Sends a test email to verify SMTP settings.
+    """
+    try:
+        test_recipient = request.args.get('email', os.getenv('TEST_EMAIL', 'russeldanielpaul@gmail.com'))
+        
+        subject = "🧪 Birthday Email System Test"
+        body = """
+        <html>
+            <body style="font-family: Arial, sans-serif; text-align: center; padding: 20px;">
+                <div style="background: #f0f0f0; border-radius: 15px; padding: 40px; max-width: 600px; margin: 0 auto;">
+                    <h1 style="color: #333;">Email System Test</h1>
+                    <p style="font-size: 18px; color: #666;">
+                        If you're reading this, your birthday email system is configured correctly! ✅
+                    </p>
+                    <p style="font-size: 14px; color: #999; margin-top: 30px;">
+                        Test performed at: {timestamp}
+                    </p>
+                </div>
+            </body>
+        </html>
+        """.format(timestamp=datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+        
+        success = send_email(test_recipient, subject, body)
+        
+        if success:
+            return jsonify({
+                "status": "success",
+                "message": f"Test email sent to {test_recipient}",
+                "timestamp": datetime.now().isoformat()
+            })
+        else:
+            return jsonify({
+                "status": "error",
+                "message": "Failed to send test email. Check logs for details.",
+                "timestamp": datetime.now().isoformat()
+            }), 500
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": str(e),
+            "timestamp": datetime.now().isoformat()
+        }), 500
+
+if __name__ == "__main__":
+    print("Birthday Email System Starting...")
+    print(f"Email sender configured: {EMAIL_ADDRESS}")
+    print(f"SMTP Host: {SMTP_HOST}:{SMTP_PORT}")
+    print("API Endpoints:")
+    print("  - /api/send-birthday-emails (triggered by GitHub Actions)")
+    print("  - /api/test-email (for testing email configuration)")
+    print("  - /health (health check)")
+    
+    app.run(debug=True, host="0.0.0.0", port=8080)

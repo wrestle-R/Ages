@@ -3,5 +3,3 @@ Flask-Cors
 pytz
 gunicorn
 python-dotenv
-schedule
-APScheduler

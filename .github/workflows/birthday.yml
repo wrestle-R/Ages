@@ -1,0 +1,39 @@
+name: Birthday Emails
+
+on:
+  schedule:
+    # Runs every 15 minutes to catch all birthday events
+    - cron: "*/15 * * * *"
+  workflow_dispatch: # Allows manual trigger from GitHub Actions tab
+
+jobs:
+  send-birthday-emails:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Trigger Birthday Email Check
+        run: |
+          echo "Triggering birthday email check..."
+          response=$(curl -s -w "\n%{http_code}" -X POST \
+            -H "Content-Type: application/json" \
+            https://ages-v1ou.onrender.com/api/send-birthday-emails)
+          
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | sed '$d')
+          
+          echo "Response: $body"
+          echo "HTTP Status: $http_code"
+          
+          # Check if request was successful
+          if [ "$http_code" -ge 200 ] && [ "$http_code" -lt 300 ]; then
+            echo "✅ Birthday email check completed successfully"
+          else
+            echo "❌ Birthday email check failed with status $http_code"
+            exit 1
+          fi
+      
+      - name: Health Check
+        if: always()
+        run: |
+          echo "Checking API health..."
+          curl -f https://ages-v1ou.onrender.com/health || echo "Health check failed"

@@ -193,14 +193,14 @@ birthdays = {
         "phone": "+1234567890"
     },
     "Russel": {
-        "date": "2005-03-22", 
-        "time": "23:40",
+        "date": "2005-10-19", 
+        "time": "02:40",
         "email": "russeldanielpaul@gmail.com",
         "phone": "+1234567890"
     },
     "Romeiro": {
         "date": "2005-10-19", 
-        "time": "00:50",
+        "time": "01:50",
         "email": "russeldanielpaul@gmail.com",
         "phone": "+1234567890"
     },

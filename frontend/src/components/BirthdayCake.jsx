@@ -61,15 +61,30 @@ const BirthdayCake = ({ person, onClose }) => {
 
   return (
     <AnimatePresence>
+      {/* Overlay backdrop */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 flex items-center justify-center"
-        style={{
-          background: "linear-gradient(to bottom, #F08080 0%, #E9967A 50%, #FF7F50 100%)",
-        }}
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+        onClick={onClose}
       >
+        {/* Birthday cake card - 80% of screen */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.9 }}
+          transition={{ type: "spring", damping: 25 }}
+          className="relative rounded-3xl overflow-hidden shadow-2xl"
+          style={{
+            background: "linear-gradient(to bottom, #F08080 0%, #E9967A 50%, #FF7F50 100%)",
+            width: "80vw",
+            height: "80vh",
+            maxWidth: "1200px",
+            maxHeight: "900px",
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
         {/* Confetti effect when all candles are out */}
         {allCandlesOut && litCandles.length > 0 && (
           <div className="absolute inset-0 pointer-events-none overflow-hidden">
@@ -477,6 +492,7 @@ const BirthdayCake = ({ person, onClose }) => {
             }
           }
         `}</style>
+        </motion.div>
       </motion.div>
     </AnimatePresence>
   );

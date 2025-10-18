@@ -2,6 +2,16 @@ from flask import Flask, jsonify
 from flask_cors import CORS
 from datetime import datetime
 import calendar
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from dotenv import load_dotenv
+import os
+from apscheduler.schedulers.background import BackgroundScheduler
+import pytz
+
+# Load environment variables
+load_dotenv()
 
 app = Flask(__name__)
 CORS(app, origins=[
@@ -13,16 +23,160 @@ CORS(app, origins=[
     '*'
 ])
 
+# Email configuration
+EMAIL_ADDRESS = os.getenv('EMAIL_ADDRESS')
+EMAIL_PASSWORD = os.getenv('EMAIL_PASSWORD')
+SMTP_HOST = os.getenv('SMTP_HOST')
+SMTP_PORT = int(os.getenv('SMTP_PORT', 587))
+
+def send_email(to_email, subject, body):
+    """Send an email using Gmail SMTP"""
+    try:
+        msg = MIMEMultipart()
+        msg['From'] = EMAIL_ADDRESS
+        msg['To'] = to_email
+        msg['Subject'] = subject
+        
+        msg.attach(MIMEText(body, 'html'))
+        
+        with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
+            server.starttls()
+            server.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
+            server.send_message(msg)
+        
+        print(f"Email sent successfully to {to_email}: {subject}")
+        return True
+    except Exception as e:
+        print(f"Failed to send email to {to_email}: {str(e)}")
+        return False
+
+def get_birthday_email_html(name, is_exact_time=False):
+    """Generate HTML content for birthday email"""
+    if is_exact_time:
+        return f"""
+        <html>
+            <body style="font-family: Arial, sans-serif; text-align: center; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <div style="background: white; border-radius: 15px; padding: 40px; max-width: 600px; margin: 0 auto;">
+                    <h1 style="color: #667eea; font-size: 36px;">🎂 Happy Birthday {name}! 🎂</h1>
+                    <h2 style="color: #764ba2; font-size: 24px; margin-top: 20px;">
+                        This is the exact moment you were born!
+                    </h2>
+                    <p style="font-size: 18px; color: #333; margin-top: 20px;">
+                        At this precise time, years ago, you came into this world and made it a better place. 
+                        We're so grateful to celebrate this special moment with you!
+                    </p>
+                    <p style="font-size: 20px; color: #667eea; margin-top: 30px; font-weight: bold;">
+                        May this year bring you joy, success, and all the happiness you deserve! 🎉
+                    </p>
+                </div>
+            </body>
+        </html>
+        """
+    else:
+        return f"""
+        <html>
+            <body style="font-family: Arial, sans-serif; text-align: center; padding: 20px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                <div style="background: white; border-radius: 15px; padding: 40px; max-width: 600px; margin: 0 auto;">
+                    <h1 style="color: #f5576c; font-size: 36px;">🎉 Happy Birthday {name}! 🎉</h1>
+                    <p style="font-size: 20px; color: #333; margin-top: 20px;">
+                        Wishing you a fantastic day filled with love, laughter, and joy!
+                    </p>
+                    <p style="font-size: 18px; color: #666; margin-top: 20px;">
+                        May all your dreams come true this year. Have an amazing birthday celebration! 🎂🎈
+                    </p>
+                    <p style="font-size: 20px; color: #f5576c; margin-top: 30px; font-weight: bold;">
+                        Cheers to another year of wonderful memories! 🥳
+                    </p>
+                </div>
+            </body>
+        </html>
+        """
+
+def check_and_send_birthday_emails():
+    """Check if it's anyone's birthday and send appropriate emails"""
+    now = datetime.now()
+    current_date = now.strftime("%m-%d")
+    current_time = now.strftime("%H:%M")
+    
+    print(f"Checking birthdays at {now}")
+    
+    for name, info in birthdays.items():
+        birth_date = info['date']
+        birth_time = info['time']
+        email = info['email']
+        
+        # Extract month and day from birth date
+        birth_month_day = birth_date[5:]  # Gets MM-DD from YYYY-MM-DD
+        
+        # Check if today is their birthday
+        if birth_month_day == current_date:
+            # Send midnight birthday email at 00:00
+            if current_time == "00:00":
+                subject = f"🎉 Happy Birthday {name}!"
+                body = get_birthday_email_html(name, is_exact_time=False)
+                send_email(email, subject, body)
+            
+            # Send exact birth time email
+            if current_time == birth_time:
+                subject = f"🎂 {name} - This is Your Exact Birth Moment!"
+                body = get_birthday_email_html(name, is_exact_time=True)
+                send_email(email, subject, body)
+
 birthdays = {
-    "Aliqyaan": {"date": "2005-11-12", "time": "13:15"},
-    "Russel": {"date": "2005-03-22", "time": "23:40"},
-    "Romeiro": {"date": "2005-10-19", "time": "00:04"},
-    "Dylan": {"date": "2006-05-13", "time": "11:35"},
-    "Gavin": {"date": "2005-03-10", "time": "21:14"},
-    "Rhea": {"date": "2006-01-03", "time": "00:00"},
-    "Moiz": {"date": "2005-02-15", "time": "00:00"},
-    "Rohan": {"date": "2004-11-12", "time": "10:12"},
-    "Reniyas": {"date": "2005-09-19", "time": "11:50"}
+    "Aliqyaan": {
+        "date": "2005-11-12", 
+        "time": "13:15",
+        "email": "russeldanielpaul@gmail.com",
+        "phone": "+1234567890"
+    },
+    "Russel": {
+        "date": "2005-03-22", 
+        "time": "23:40",
+        "email": "russeldanielpaul@gmail.com",
+        "phone": "+1234567890"
+    },
+    "Romeiro": {
+        "date": "2005-10-19", 
+        "time": "00:50",
+        "email": "russeldanielpaul@gmail.com",
+        "phone": "+1234567890"
+    },
+    "Dylan": {
+        "date": "2006-05-13", 
+        "time": "11:35",
+        "email": "russeldanielpaul@gmail.com",
+        "phone": "+1234567890"
+    },
+    "Gavin": {
+        "date": "2005-03-10", 
+        "time": "21:14",
+        "email": "russeldanielpaul@gmail.com",
+        "phone": "+1234567890"
+    },
+    "Rhea": {
+        "date": "2006-01-03", 
+        "time": "00:00",
+        "email": "russeldanielpaul@gmail.com",
+        "phone": "+1234567890"
+    },
+    "Moiz": {
+        "date": "2005-02-15", 
+        "time": "00:00",
+        "email": "russeldanielpaul@gmail.com",
+        "phone": "+1234567890"
+    },
+    "Rohan": {
+        "date": "2004-11-12", 
+        "time": "10:12",
+        "email": "russeldanielpaul@gmail.com",
+        "phone": "+1234567890"
+    },
+    "Reniyas": {
+        "date": "2005-09-19", 
+        "time": "11:50",
+        "email": "russeldanielpaul@gmail.com",
+        "phone": "+1234567890"
+    }
 }
 
 @app.route("/api/age")
@@ -133,4 +287,17 @@ def health():
         return jsonify({"status": "unhealthy", "error": str(e)}), 500
 
 if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=8080)
+    # Initialize scheduler for birthday emails
+    scheduler = BackgroundScheduler()
+    # Check for birthdays every minute
+    scheduler.add_job(func=check_and_send_birthday_emails, trigger="interval", minutes=1)
+    scheduler.start()
+    
+    print("Birthday email scheduler started!")
+    print(f"Email sender: {EMAIL_ADDRESS}")
+    
+    try:
+        app.run(debug=True, host="0.0.0.0", port=8080)
+    except (KeyboardInterrupt, SystemExit):
+        scheduler.shutdown()
+        print("Scheduler shut down")

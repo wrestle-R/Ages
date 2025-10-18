@@ -14,11 +14,15 @@ CORS(app, origins=[
 ])
 
 birthdays = {
-    "Russel Daniel Paul": "2005-03-22",
-    "Paul Renjithan": "1971-10-29",
-    "Lydia Paul": "2002-05-24",
-    "Sujana Florence": "1976-04-17",
-    "Paty": "1941-03-23"
+    "Aliqyaan": {"date": "2005-11-12", "time": "13:15"},
+    "Russel": {"date": "2005-03-22", "time": "23:40"},
+    "Romeiro": {"date": "2005-10-19", "time": "00:04"},
+    "Dylan": {"date": "2006-05-13", "time": "11:35"},
+    "Gavin": {"date": "2005-03-10", "time": "21:14"},
+    "Rhea": {"date": "2006-01-03", "time": "00:00"},
+    "Moiz": {"date": "2005-02-15", "time": "00:00"},
+    "Rohan": {"date": "2004-11-12", "time": "10:12"},
+    "Reniyas": {"date": "2005-09-19", "time": "11:50"}
 }
 
 @app.route("/api/age")
@@ -26,7 +30,8 @@ def get_ages():
     result = {}
     try:
         today = datetime.now()
-        for name, birth_str in birthdays.items():
+        for name, birth_info in birthdays.items():
+            birth_str = birth_info["date"]
             birth = datetime.strptime(birth_str, "%Y-%m-%d")
             
             years = today.year - birth.year
@@ -60,6 +65,59 @@ def get_ages():
                 "total_minutes": total_minutes,
                 "total_seconds": total_seconds
             }
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/api/birthdays")
+def get_birthdays():
+    result = []
+    try:
+        now = datetime.now()
+        
+        for name, birth_info in birthdays.items():
+            birth_date_str = birth_info["date"]
+            birth_time_str = birth_info["time"]
+            
+            # Parse birth date and time
+            birth_parts = birth_date_str.split("-")
+            time_parts = birth_time_str.split(":")
+            
+            birth_year = int(birth_parts[0])
+            birth_month = int(birth_parts[1])
+            birth_day = int(birth_parts[2])
+            birth_hour = int(time_parts[0])
+            birth_minute = int(time_parts[1])
+            
+            # Calculate current age
+            birth_datetime = datetime(birth_year, birth_month, birth_day, birth_hour, birth_minute)
+            age_seconds = (now - birth_datetime).total_seconds()
+            age_years = age_seconds / (365.25 * 24 * 60 * 60)
+            
+            # Calculate next birthday
+            next_birthday = datetime(now.year, birth_month, birth_day, birth_hour, birth_minute)
+            if next_birthday < now:
+                next_birthday = datetime(now.year + 1, birth_month, birth_day, birth_hour, birth_minute)
+            
+            # Check if today is birthday
+            is_birthday = (now.month == birth_month and now.day == birth_day)
+            
+            # Countdown to next birthday
+            countdown_delta = next_birthday - now
+            countdown_seconds = countdown_delta.total_seconds()
+            
+            result.append({
+                "name": name,
+                "month": birth_month,
+                "day": birth_day,
+                "year": birth_year,
+                "hour": birth_hour,
+                "minute": birth_minute,
+                "currentAge": age_years,
+                "isBirthday": is_birthday,
+                "countdownSeconds": countdown_seconds
+            })
+        
         return jsonify(result)
     except Exception as e:
         return jsonify({"error": str(e)}), 500

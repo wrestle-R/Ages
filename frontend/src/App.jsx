@@ -1,9 +1,10 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import Transition from './components/Transition'
-import Home from './Pages/Home'
+import Countdown from './components/Countdown'
 
 const App = () => {
-  const [showHome, setShowHome] = useState(false)
+  const [showCountdown, setShowCountdown] = useState(false)
+  const [transitionComplete, setTransitionComplete] = useState(false)
 
   // Build health endpoint URL from environment variables
   const getHealthEndpoint = () => {
@@ -13,13 +14,26 @@ const App = () => {
   }
 
   const handleTransitionComplete = () => {
-    console.log('[App] Transition complete, showing Home')
-    setShowHome(true)
+    console.log('[App] Transition complete, showing Countdown')
+    setTransitionComplete(true)
+    // Small delay to ensure smooth transition
+    setTimeout(() => {
+      setShowCountdown(true)
+    }, 100)
   }
+
+  // Check if transition was already done
+  useEffect(() => {
+    const isDone = localStorage.getItem('ages_transition_done')
+    if (isDone === 'true') {
+      setTransitionComplete(true)
+      setShowCountdown(true)
+    }
+  }, [])
 
   return (
     <>
-      {!showHome && (
+      {!transitionComplete && (
         <Transition
           healthEndpoint={getHealthEndpoint()}
           onTransitionComplete={handleTransitionComplete}
@@ -27,7 +41,7 @@ const App = () => {
           storageKey="ages_transition_done"
         />
       )}
-      {showHome && <Home />}
+      {showCountdown && <Countdown />}
     </>
   )
 }

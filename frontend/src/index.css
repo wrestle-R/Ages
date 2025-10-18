@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@import "@fontsource/geist-mono/700.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -113,8 +114,9 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
+    font-family: 'Geist Mono', monospace;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-[#0a0a0a] text-white;
   }
 }

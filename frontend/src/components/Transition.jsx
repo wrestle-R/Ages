@@ -101,6 +101,11 @@ function Transition({
     } catch (e) {
       console.error("[Transition] Health check fetch exception:", e);
       setHealth({ status: "down", ok: false });
+      
+      // If server is completely down, proceed anyway after a few attempts
+      if (!healthCheckCompleteRef.current) {
+        console.log("[Transition] Server appears down, will proceed with animation anyway");
+      }
     }
   };
 
@@ -110,12 +115,32 @@ function Transition({
       return;
     }
 
-    fetchHealth();
+    let attemptCount = 0;
+    const maxAttempts = 3;
+
+    const checkHealthWithFallback = async () => {
+      attemptCount++;
+      await fetchHealth();
+      
+      // If we've tried maxAttempts and still no success, proceed anyway
+      if (attemptCount >= maxAttempts && !healthCheckCompleteRef.current) {
+        console.log("[Transition] Max health check attempts reached, proceeding with animation");
+        setHealth({ status: "proceeding anyway", ok: true });
+        healthCheckCompleteRef.current = true;
+        
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current);
+          intervalRef.current = null;
+        }
+      }
+    };
+
+    checkHealthWithFallback();
     
-    // Poll for health until we get a healthy response
+    // Poll for health until we get a healthy response or max attempts
     intervalRef.current = setInterval(() => {
       if (!healthCheckCompleteRef.current) {
-        fetchHealth();
+        checkHealthWithFallback();
       }
     }, healthPollInterval);
 

@@ -16,7 +16,7 @@ jobs:
           echo "Triggering birthday email check..."
           response=$(curl -s -w "\n%{http_code}" -X POST \
             -H "Content-Type: application/json" \
-            https://ages-v1ou.onrender.com/api/send-birthday-emails)
+            https://ages-5g4e.onrender.com/api/send-birthday-emails)
           
           http_code=$(echo "$response" | tail -n1)
           body=$(echo "$response" | sed '$d')
@@ -36,4 +36,4 @@ jobs:
         if: always()
         run: |
           echo "Checking API health..."
-          curl -f https://ages-v1ou.onrender.com/health || echo "Health check failed"
+          curl -f https://ages-5g4e.onrender.com/health || echo "Health check failed"

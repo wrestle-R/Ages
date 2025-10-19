@@ -187,20 +187,20 @@ def check_and_send_birthday_emails():
 
 birthdays = {
     "Aliqyaan": {
-        "date": "2005-11-12", 
+        "date": "2005-10-19", 
         "time": "13:15",
         "email": "russeldanielpaul@gmail.com",
         "phone": "+1234567890"
     },
     "Russel": {
         "date": "2005-10-19", 
-        "time": "02:40",
+        "time": "14:30",
         "email": "russeldanielpaul@gmail.com",
         "phone": "+1234567890"
     },
     "Romeiro": {
-        "date": "2005-10-19", 
-        "time": "01:50",
+        "date": "2005-10-20", 
+        "time": "11:40",
         "email": "russeldanielpaul@gmail.com",
         "phone": "+1234567890"
     },

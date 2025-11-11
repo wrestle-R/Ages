@@ -8,6 +8,7 @@ from email.mime.multipart import MIMEMultipart
 from dotenv import load_dotenv
 import os
 import json
+from pytz import timezone
 
 # Load environment variables
 load_dotenv()
@@ -34,19 +35,22 @@ LAST_RUN_FILE = 'last_run.json'
 # Path to the birthdays JSON file
 BIRTHDAYS_FILE = 'birthdays.json'
 
+# Define IST timezone
+IST = timezone('Asia/Kolkata')
+
 def get_last_run_time():
     """Get the last time birthday emails were checked"""
     try:
         if os.path.exists(LAST_RUN_FILE):
             with open(LAST_RUN_FILE, 'r') as f:
                 data = json.load(f)
-                return datetime.fromisoformat(data['last_run'])
+                return datetime.fromisoformat(data['last_run']).replace(tzinfo=IST)
         else:
             # If file doesn't exist, assume last run was 15 minutes ago
-            return datetime.now() - timedelta(minutes=15)
+            return datetime.now(IST) - timedelta(minutes=15)
     except Exception as e:
         print(f"Error reading last run time: {e}")
-        return datetime.now() - timedelta(minutes=15)
+        return datetime.now(IST) - timedelta(minutes=15)
 
 def set_last_run_time(timestamp):
     """Save the last run timestamp"""
@@ -124,7 +128,7 @@ def check_and_send_birthday_emails():
     Check if it's anyone's birthday and send appropriate emails.
     Uses interval-based checking to ensure no emails are missed.
     """
-    current_time = datetime.now()
+    current_time = datetime.now(IST)
     last_run_time = get_last_run_time()
     
     print(f"Checking birthdays from {last_run_time} to {current_time}")
@@ -148,10 +152,10 @@ def check_and_send_birthday_emails():
         # Check if today is their birthday
         if current_time.month == birth_month and current_time.day == birth_day:
             
-            # Create midnight timestamp for today
+            # Create midnight timestamp for today (IST)
             midnight_today = current_time.replace(hour=0, minute=0, second=0, microsecond=0)
             
-            # Create exact birth time timestamp for today
+            # Create exact birth time timestamp for today (IST)
             birth_time_today = current_time.replace(
                 hour=birth_hour, 
                 minute=birth_minute, 
@@ -207,10 +211,10 @@ birthdays = load_birthdays()
 def get_ages():
     result = {}
     try:
-        today = datetime.now()
+        today = datetime.now(IST)
         for name, birth_info in birthdays.items():
             birth_str = birth_info["date"]
-            birth = datetime.strptime(birth_str, "%Y-%m-%d")
+            birth = datetime.strptime(birth_str, "%Y-%m-%d").replace(tzinfo=IST)
             
             years = today.year - birth.year
             months = today.month - birth.month
@@ -251,7 +255,7 @@ def get_ages():
 def get_birthdays():
     result = []
     try:
-        now = datetime.now()
+        now = datetime.now(IST)
         
         for name, birth_info in birthdays.items():
             birth_date_str = birth_info["date"]
@@ -305,7 +309,7 @@ def health():
     try:
         return jsonify({
             "status": "healthy",
-            "timestamp": datetime.utcnow().isoformat() + "Z"
+            "timestamp": datetime.now(IST).isoformat()
         })
     except Exception as e:
         return jsonify({"status": "unhealthy", "error": str(e)}), 500
@@ -334,14 +338,14 @@ def send_birthday_emails_endpoint():
             "status": "success",
             "message": f"Birthday check completed. {len(emails_sent)} email(s) sent.",
             "emails_sent": emails_sent,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now(IST).isoformat()
         })
     except Exception as e:
         print(f"Error in send_birthday_emails_endpoint: {str(e)}")
         return jsonify({
             "status": "error",
             "message": str(e),
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now(IST).isoformat()
         }), 500
 
 @app.route("/api/test-email", methods=['GET', 'POST'])
@@ -368,7 +372,7 @@ def test_email_endpoint():
                 </div>
             </body>
         </html>
-        """.format(timestamp=datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+        """.format(timestamp=datetime.now(IST).strftime("%Y-%m-%d %H:%M:%S"))
         
         success = send_email(test_recipient, subject, body)
         
@@ -376,19 +380,19 @@ def test_email_endpoint():
             return jsonify({
                 "status": "success",
                 "message": f"Test email sent to {test_recipient}",
-                "timestamp": datetime.now().isoformat()
+                "timestamp": datetime.now(IST).isoformat()
             })
         else:
             return jsonify({
                 "status": "error",
                 "message": "Failed to send test email. Check logs for details.",
-                "timestamp": datetime.now().isoformat()
+                "timestamp": datetime.now(IST).isoformat()
             }), 500
     except Exception as e:
         return jsonify({
             "status": "error",
             "message": str(e),
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now(IST).isoformat()
         }), 500
 
 if __name__ == "__main__":

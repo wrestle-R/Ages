@@ -249,6 +249,9 @@ def get_ages():
             }
         return jsonify(result)
     except Exception as e:
+        print(f"Error in get_ages: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
 @app.route("/api/birthdays")
@@ -271,21 +274,22 @@ def get_birthdays():
             birth_hour = int(time_parts[0])
             birth_minute = int(time_parts[1])
             
-            # Calculate current age
-            birth_datetime = datetime(birth_year, birth_month, birth_day, birth_hour, birth_minute)
-            age_seconds = (now - birth_datetime).total_seconds()
+            # Calculate current age (using naive datetime for calculation)
+            birth_datetime_naive = datetime(birth_year, birth_month, birth_day, birth_hour, birth_minute)
+            now_naive = now.replace(tzinfo=None)
+            age_seconds = (now_naive - birth_datetime_naive).total_seconds()
             age_years = age_seconds / (365.25 * 24 * 60 * 60)
             
-            # Calculate next birthday
-            next_birthday = datetime(now.year, birth_month, birth_day, birth_hour, birth_minute)
-            if next_birthday < now:
-                next_birthday = datetime(now.year + 1, birth_month, birth_day, birth_hour, birth_minute)
+            # Calculate next birthday (using naive datetime)
+            next_birthday_naive = datetime(now.year, birth_month, birth_day, birth_hour, birth_minute)
+            if next_birthday_naive < now_naive:
+                next_birthday_naive = datetime(now.year + 1, birth_month, birth_day, birth_hour, birth_minute)
             
             # Check if today is birthday
             is_birthday = (now.month == birth_month and now.day == birth_day)
             
             # Countdown to next birthday
-            countdown_delta = next_birthday - now
+            countdown_delta = next_birthday_naive - now_naive
             countdown_seconds = countdown_delta.total_seconds()
             
             result.append({
@@ -302,6 +306,9 @@ def get_birthdays():
         
         return jsonify(result)
     except Exception as e:
+        print(f"Error in get_birthdays: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
 @app.route("/health")

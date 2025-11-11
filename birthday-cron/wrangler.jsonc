@@ -1,0 +1,35 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "birthday-cron",
+  "main": "src/index.js",
+  "compatibility_date": "2025-11-11",
+
+  "observability": {
+    "enabled": true
+  },
+
+  // Cron Triggers
+  // Runs every 5 minutes: format = minute hour day month day-of-week
+  "triggers": {
+    "crons": [
+      "*/5 * * * *"
+    ]
+  },
+
+  // Environment variables (non-sensitive only)
+  // For secrets like API keys, use `wrangler secret put API_KEY`
+  // Example: wrangler secret put API_KEY
+  // Make sure it matches your Flask .env API_KEY value
+  "vars": {
+    "MY_VARIABLE": "example_value"
+  }
+
+  // Smart placement (optional)
+  // "placement": { "mode": "smart" }
+
+  // Static assets (optional)
+  // "assets": { "directory": "./public/", "binding": "ASSETS" }
+
+  // Service bindings (optional)
+  // "services": [{ "binding": "MY_SERVICE", "service": "my-service" }]
+}

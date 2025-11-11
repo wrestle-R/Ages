@@ -185,7 +185,7 @@ if __name__ == "__main__":
     print("\nMake sure:")
     print("  1. You've deployed the latest code to Render")
     print("  2. GMAIL_REFRESH_TOKEN is set in Render environment variables")
-    print("  3. credentials.json is deployed with your app")
+    print("  3. GMAIL_CLIENT_ID and GMAIL_CLIENT_SECRET are set in Render environment variables")
     print("  4. API_KEY is set in Render environment variables\n")
     
     if len(sys.argv) > 1:

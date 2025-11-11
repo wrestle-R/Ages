@@ -31,19 +31,22 @@ SCOPES = ['https://www.googleapis.com/auth/gmail.send']
 EMAIL_ADDRESS = os.getenv('EMAIL_ADDRESS', 'russeldanielpaul@gmail.com')
 REFRESH_TOKEN = os.getenv('GMAIL_REFRESH_TOKEN')
 
-# Load credentials from credentials.json
+# Load credentials from environment variables
 def load_gmail_credentials():
-    """Load and create Gmail API credentials"""
+    """Load and create Gmail API credentials from environment variables"""
     try:
         if not REFRESH_TOKEN:
             print("ERROR: GMAIL_REFRESH_TOKEN not found in environment variables")
             return None
-            
-        with open('credentials.json', 'r') as f:
-            creds_data = json.load(f)
-            client_id = creds_data['web']['client_id']
-            client_secret = creds_data['web']['client_secret']
-            token_uri = creds_data['web']['token_uri']
+        
+        # Read credentials from environment variables
+        client_id = os.getenv('GMAIL_CLIENT_ID')
+        client_secret = os.getenv('GMAIL_CLIENT_SECRET')
+        token_uri = os.getenv('GMAIL_TOKEN_URI', 'https://oauth2.googleapis.com/token')
+        
+        if not client_id or not client_secret:
+            print("ERROR: GMAIL_CLIENT_ID or GMAIL_CLIENT_SECRET not found in environment variables")
+            return None
         
         # Create credentials object with refresh token
         creds = Credentials(

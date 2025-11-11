@@ -78,18 +78,17 @@ def get_last_run_time():
                 # Ensure timezone-aware datetime
                 if last_run.tzinfo is None:
                     last_run = last_run.replace(tzinfo=IST)
-                print(f"[DEBUG] Last run time from file: {last_run.isoformat()}")
                 return last_run
         else:
             # If file doesn't exist, assume last run was 15 minutes ago
             # This ensures we catch recent birthdays on first run
             fallback_time = datetime.now(IST) - timedelta(minutes=15)
-            print(f"[DEBUG] No last_run.json found, using fallback: {fallback_time.isoformat()}")
+            print(f"⚠️  No last_run.json found, using fallback: {fallback_time.isoformat()}")
             # Create the file immediately
             set_last_run_time(fallback_time)
             return fallback_time
     except Exception as e:
-        print(f"[ERROR] Error reading last run time: {e}")
+        print(f"❌ Error reading last run time: {e}")
         fallback_time = datetime.now(IST) - timedelta(minutes=15)
         return fallback_time
 
@@ -98,22 +97,33 @@ def set_last_run_time(timestamp):
     try:
         with open(LAST_RUN_FILE, 'w') as f:
             json.dump({'last_run': timestamp.isoformat()}, f)
+        print(f'💾 Saved last_run.json: {timestamp.isoformat()}')
     except Exception as e:
-        print(f"Error saving last run time: {e}")
+        print(f"❌ Error saving last run time: {e}")
 
 def send_email(to_email, subject, body):
     """Send an email using Gmail API"""
+    print(f'\n📧 SENDING EMAIL:')
+    print(f'   To: {to_email}')
+    print(f'   Subject: {subject}')
+    
     try:
         # Load credentials
+        print(f'   Loading Gmail credentials...')
         creds = load_gmail_credentials()
         if not creds:
-            print("Failed to load Gmail credentials")
+            print("   ❌ Failed to load Gmail credentials")
             return False
         
+        print(f'   ✅ Credentials loaded successfully')
+        
         # Build the Gmail service
+        print(f'   Building Gmail API service...')
         service = build('gmail', 'v1', credentials=creds)
+        print(f'   ✅ Gmail service built')
         
         # Create the email
+        print(f'   Creating email message...')
         message = MIMEMultipart('alternative')
         message['From'] = EMAIL_ADDRESS
         message['To'] = to_email
@@ -124,22 +134,28 @@ def send_email(to_email, subject, body):
         
         # Encode the message
         raw_message = base64.urlsafe_b64encode(message.as_bytes()).decode('utf-8')
+        print(f'   ✅ Message encoded')
         
         # Send the email
+        print(f'   Sending via Gmail API...')
         send_result = service.users().messages().send(
             userId='me',
             body={'raw': raw_message}
         ).execute()
         
-        print(f"Email sent successfully to {to_email}: {subject}")
-        print(f"Message ID: {send_result.get('id')}")
+        print(f'   ✅ EMAIL SENT SUCCESSFULLY!')
+        print(f'   Gmail Message ID: {send_result.get("id")}')
+        print(f'   Thread ID: {send_result.get("threadId")}')
         return True
         
     except HttpError as error:
-        print(f"Gmail API error sending to {to_email}: {error}")
+        print(f'   ❌ Gmail API HTTP Error:')
+        print(f'      Error: {error}')
+        print(f'      Status: {error.resp.status if hasattr(error, "resp") else "unknown"}')
         return False
     except Exception as e:
-        print(f"Failed to send email to {to_email}: {str(e)}")
+        print(f'   ❌ FAILED TO SEND EMAIL')
+        print(f'      Error: {str(e)}')
         import traceback
         traceback.print_exc()
         return False
@@ -192,18 +208,38 @@ def check_and_send_birthday_emails():
     Uses interval-based checking to ensure no emails are missed.
     FIXED: Better interval logic to prevent missing emails due to timing issues
     """
+    print('\n' + '=' * 80)
+    print('🎂 BIRTHDAY EMAIL CHECK STARTED')
+    print('=' * 80)
+    
     current_time = datetime.now(IST)
     last_run_time = get_last_run_time()
+    
+    # Calculate time between runs
+    time_diff = current_time - last_run_time
+    time_diff_seconds = time_diff.total_seconds()
+    time_diff_minutes = time_diff_seconds / 60
+    
+    print(f'\n⏰ TIMING INFORMATION:')
+    print(f'   Current time (IST): {current_time.strftime("%Y-%m-%d %H:%M:%S")}')
+    print(f'   Last run time:      {last_run_time.strftime("%Y-%m-%d %H:%M:%S")}')
+    print(f'   Time between runs:  {time_diff_minutes:.2f} minutes ({time_diff_seconds:.0f} seconds)')
+    print(f'   Interval:           [{last_run_time.strftime("%H:%M:%S")} to {current_time.strftime("%H:%M:%S")}]')
     
     # Add buffer to avoid edge cases (subtract a few seconds from last_run for safety)
     last_run_buffer = last_run_time - timedelta(seconds=30)
     
-    print(f"[DEBUG] Checking birthdays from {last_run_buffer} to {current_time}")
-    print(f"[DEBUG] Current IST time: {current_time.strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"   Buffer applied:     -30 seconds")
+    print(f"   Buffered start:     {last_run_buffer.strftime('%Y-%m-%d %H:%M:%S')}")
+    
+    print(f'\n👥 CHECKING {len(birthdays)} BIRTHDAYS...')
     
     emails_sent = []
     
     for name, info in birthdays.items():
+        print(f'\n{"-" * 60}')
+        print(f'👤 Checking: {name}')
+        
         birth_date = info['date']
         birth_time = info['time']
         email = info['email']
@@ -217,11 +253,13 @@ def check_and_send_birthday_emails():
         birth_hour = int(time_parts[0])
         birth_minute = int(time_parts[1])
         
-        print(f"[DEBUG] Checking {name}: birth date {birth_month}/{birth_day}, birth time {birth_hour}:{birth_minute:02d}")
+        print(f'   📅 Birth date: {birth_month}/{birth_day}')
+        print(f'   🕐 Birth time: {birth_hour:02d}:{birth_minute:02d}')
+        print(f'   📧 Email: {email}')
         
         # Check if today is their birthday
         if current_time.month == birth_month and current_time.day == birth_day:
-            print(f"[DEBUG] 🎂 TODAY IS {name}'s BIRTHDAY!")
+            print(f'   � TODAY IS {name}\'s BIRTHDAY!')
             
             # Create midnight timestamp for today (IST)
             midnight_today = current_time.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -234,13 +272,14 @@ def check_and_send_birthday_emails():
                 microsecond=0
             )
             
-            print(f"[DEBUG] Midnight: {midnight_today.strftime('%Y-%m-%d %H:%M:%S')}")
-            print(f"[DEBUG] Birth time: {birth_time_today.strftime('%Y-%m-%d %H:%M:%S')}")
+            print(f'\n   📬 CHECKING MIDNIGHT EMAIL:')
+            print(f'      Midnight time: {midnight_today.strftime("%H:%M:%S")}')
+            print(f'      In interval?: {last_run_buffer <= midnight_today <= current_time}')
             
             # Check if midnight birthday email should be sent
             # FIXED: Use <= on both sides for inclusive interval check
             if last_run_buffer <= midnight_today <= current_time:
-                print(f"[DEBUG] ✅ Sending midnight email to {name}")
+                print(f'      ✅ SENDING MIDNIGHT EMAIL to {name}')
                 subject = f"🎉 Happy Birthday {name}!"
                 body = get_birthday_email_html(name, is_exact_time=False)
                 if send_email(email, subject, body):
@@ -249,18 +288,20 @@ def check_and_send_birthday_emails():
                         "type": "midnight",
                         "time": midnight_today.isoformat()
                     })
-                    print(f"[DEBUG] ✅ Midnight email sent to {name}")
+                    print(f'      ✅ Midnight email SENT successfully')
                 else:
-                    print(f"[DEBUG] ❌ Failed to send midnight email to {name}")
+                    print(f'      ❌ Midnight email FAILED to send')
             else:
-                print(f"[DEBUG] ⏭️ Midnight email not in interval for {name}")
-                print(f"[DEBUG]    Interval: {last_run_buffer.strftime('%H:%M:%S')} to {current_time.strftime('%H:%M:%S')}")
-                print(f"[DEBUG]    Midnight: {midnight_today.strftime('%H:%M:%S')}")
+                print(f'      ⏭️  Midnight email not in current interval (skipped)')
+            
+            print(f'\n   🎂 CHECKING EXACT BIRTH TIME EMAIL:')
+            print(f'      Birth time: {birth_time_today.strftime("%H:%M:%S")}')
+            print(f'      In interval?: {last_run_buffer <= birth_time_today <= current_time}')
             
             # Check if exact birth time email should be sent
             # FIXED: Use <= on both sides for inclusive interval check
             if last_run_buffer <= birth_time_today <= current_time:
-                print(f"[DEBUG] ✅ Sending exact birth time email to {name}")
+                print(f'      ✅ SENDING EXACT BIRTH TIME EMAIL to {name}')
                 subject = f"🎂 {name} - This is Your Exact Birth Moment!"
                 body = get_birthday_email_html(name, is_exact_time=True)
                 if send_email(email, subject, body):
@@ -269,17 +310,29 @@ def check_and_send_birthday_emails():
                         "type": "exact_time",
                         "time": birth_time_today.isoformat()
                     })
-                    print(f"[DEBUG] ✅ Exact time email sent to {name}")
+                    print(f'      ✅ Exact time email SENT successfully')
                 else:
-                    print(f"[DEBUG] ❌ Failed to send exact time email to {name}")
+                    print(f'      ❌ Exact time email FAILED to send')
             else:
-                print(f"[DEBUG] ⏭️ Exact time email not in interval for {name}")
-                print(f"[DEBUG]    Interval: {last_run_buffer.strftime('%H:%M:%S')} to {current_time.strftime('%H:%M:%S')}")
-                print(f"[DEBUG]    Birth time: {birth_time_today.strftime('%H:%M:%S')}")
+                print(f'      ⏭️  Exact time email not in current interval (skipped)')
+        else:
+            print(f'   ⏭️  Not their birthday today (Current: {current_time.month}/{current_time.day})')
     
     # Update last run time
     set_last_run_time(current_time)
-    print(f"[DEBUG] Updated last run time to {current_time.isoformat()}")
+    
+    print(f'\n{"-" * 60}')
+    print(f'\n📊 SUMMARY:')
+    print(f'   Total birthdays checked: {len(birthdays)}')
+    print(f'   Total emails sent: {len(emails_sent)}')
+    if emails_sent:
+        for i, email_info in enumerate(emails_sent, 1):
+            print(f'   {i}. {email_info["name"]} ({email_info["type"]}) at {email_info["time"]}')
+    
+    print(f'\n💾 UPDATED last_run.json to: {current_time.strftime("%Y-%m-%d %H:%M:%S")}')
+    print('=' * 80)
+    print('🏁 BIRTHDAY EMAIL CHECK COMPLETED')
+    print('=' * 80 + '\n')
     
     return emails_sent
 
@@ -427,52 +480,102 @@ def send_birthday_emails_endpoint():
     Endpoint to trigger birthday email checking.
     Called by Cloudflare Workers cron job or manually.
     """
+    endpoint_start_time = datetime.now(IST)
+    
+    print('\n' + '🌟' * 40)
+    print('📡 API ENDPOINT HIT: /api/send-birthday-emails')
+    print('🌟' * 40)
+    print(f'⏰ Request received at: {endpoint_start_time.strftime("%Y-%m-%d %H:%M:%S")} IST')
+    print(f'🌐 Request method: {request.method}')
+    print(f'🔗 Request URL: {request.url}')
+    print(f'🖥️  Remote address: {request.remote_addr}')
+    print(f'🌍 User agent: {request.headers.get("User-Agent", "Unknown")}')
+    
     try:
-        # Log the request for debugging
-        print(f"Birthday email check triggered at {datetime.now(IST).isoformat()}")
-        print(f"Request method: {request.method}")
-        print(f"Request headers: {dict(request.headers)}")
+        # Log request headers (excluding sensitive data)
+        print(f'\n📋 REQUEST HEADERS:')
+        for header, value in request.headers.items():
+            if 'key' in header.lower() or 'auth' in header.lower():
+                print(f'   {header}: [REDACTED]')
+            else:
+                print(f'   {header}: {value}')
         
         # Optional API key authentication
         api_key = request.headers.get('X-API-Key') or request.args.get('api_key')
         expected_api_key = os.getenv('API_KEY')
         
         # If API_KEY is set in environment, require it
-        if expected_api_key and api_key != expected_api_key:
-            print(f"❌ Unauthorized access attempt")
-            return jsonify({
-                "error": "Unauthorized",
-                "message": "Invalid or missing API key"
-            }), 401
-        
-        print("✅ API key validated" if expected_api_key else "⚠️ No API key required")
+        if expected_api_key:
+            print(f'\n🔐 API KEY VALIDATION:')
+            if api_key == expected_api_key:
+                print(f'   ✅ API key is VALID')
+            else:
+                print(f'   ❌ API key is INVALID or MISSING')
+                print(f'   Expected key present: {bool(expected_api_key)}')
+                print(f'   Provided key present: {bool(api_key)}')
+                return jsonify({
+                    "error": "Unauthorized",
+                    "message": "Invalid or missing API key"
+                }), 401
+        else:
+            print(f'\n⚠️  No API key required (API_KEY not set in environment)')
         
         # Check and send birthday emails
+        print(f'\n🎂 Starting birthday email check...')
         emails_sent = check_and_send_birthday_emails()
+        
+        endpoint_end_time = datetime.now(IST)
+        endpoint_duration = (endpoint_end_time - endpoint_start_time).total_seconds()
+        
+        # Get timing information
+        last_run_time = get_last_run_time()
+        time_between_runs = (endpoint_start_time - last_run_time).total_seconds() / 60  # in minutes
         
         response_data = {
             "status": "success",
             "message": f"Birthday check completed. {len(emails_sent)} email(s) sent.",
             "emails_sent": emails_sent,
-            "timestamp": datetime.now(IST).isoformat()
+            "timestamp": endpoint_end_time.isoformat(),
+            "last_run_time": last_run_time.isoformat(),
+            "current_run_time": endpoint_end_time.isoformat(),
+            "time_between_runs": f"{time_between_runs:.2f} minutes",
+            "endpoint_duration_seconds": f"{endpoint_duration:.2f}"
         }
         
-        print(f"✅ Success: {response_data['message']}")
+        print(f'\n✅ API REQUEST COMPLETED SUCCESSFULLY')
+        print(f'   Total emails sent: {len(emails_sent)}')
+        print(f'   Endpoint duration: {endpoint_duration:.2f} seconds')
+        print(f'   Response timestamp: {endpoint_end_time.strftime("%Y-%m-%d %H:%M:%S")} IST')
+        
         if emails_sent:
-            print(f"📧 Emails sent: {json.dumps(emails_sent, indent=2)}")
+            print(f'\n📧 EMAILS SENT DETAILS:')
+            for i, email in enumerate(emails_sent, 1):
+                print(f'   {i}. {email["name"]} ({email["type"]}) at {email["time"]}')
+        
+        print('🌟' * 40 + '\n')
         
         return jsonify(response_data)
         
     except Exception as e:
+        endpoint_end_time = datetime.now(IST)
+        endpoint_duration = (endpoint_end_time - endpoint_start_time).total_seconds()
         error_msg = str(e)
-        print(f"❌ Error in send_birthday_emails_endpoint: {error_msg}")
+        
+        print(f'\n❌ API REQUEST FAILED')
+        print(f'   Error: {error_msg}')
+        print(f'   Endpoint duration: {endpoint_duration:.2f} seconds')
+        print(f'   Error timestamp: {endpoint_end_time.strftime("%Y-%m-%d %H:%M:%S")} IST')
+        
         import traceback
+        print(f'\n📋 TRACEBACK:')
         traceback.print_exc()
+        
+        print('🌟' * 40 + '\n')
         
         return jsonify({
             "status": "error",
             "message": error_msg,
-            "timestamp": datetime.now(IST).isoformat()
+            "timestamp": endpoint_end_time.isoformat()
         }), 500
 
 @app.route("/api/test-email", methods=['GET', 'POST'])

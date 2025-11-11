@@ -72,21 +72,68 @@ curl "http://localhost:8787/__scheduled?cron=*/5+*+*+*+*"
 
 	// Scheduled handler - runs every 5 minutes
 	async scheduled(event, env, ctx) {
-		console.log(`🎂 Birthday cron triggered at ${event.cron} (${new Date().toISOString()})`);
+		const cronStartTime = new Date();
+		console.log('\n' + '='.repeat(80));
+		console.log(`🎂 BIRTHDAY CRON JOB STARTED`);
+		console.log(`⏰ Cron pattern: ${event.cron}`);
+		console.log(`🕐 Start time: ${cronStartTime.toISOString()}`);
+		console.log(`📍 Timezone: ${Intl.DateTimeFormat().resolvedOptions().timeZone}`);
+		console.log('='.repeat(80));
 		
 		try {
-			const result = await triggerBirthdayCheck(env);
+			const result = await triggerBirthdayCheck(env, cronStartTime);
+			
+			// Calculate duration
+			const cronEndTime = new Date();
+			const durationMs = cronEndTime - cronStartTime;
+			const durationSeconds = (durationMs / 1000).toFixed(2);
+			
+			console.log('\n' + '-'.repeat(80));
+			console.log(`📊 CRON JOB RESULTS`);
+			console.log(`Status: ${result.success ? '✅ SUCCESS' : '❌ FAILED'}`);
+			console.log(`Message: ${result.message}`);
+			console.log(`Duration: ${durationSeconds} seconds (${durationMs}ms)`);
 			
 			if (result.success) {
-				console.log(`✅ Success: ${result.message}`);
 				if (result.emails_sent && result.emails_sent.length > 0) {
-					console.log(`📧 Emails sent:`, JSON.stringify(result.emails_sent, null, 2));
+					console.log(`\n📧 EMAILS SENT: ${result.emails_sent.length}`);
+					result.emails_sent.forEach((email, index) => {
+						console.log(`  ${index + 1}. ${email.name} (${email.type}) at ${email.time}`);
+					});
+				} else {
+					console.log(`\n📭 No birthday emails sent this run`);
+				}
+				
+				// Show timing info from backend
+				if (result.last_run_time && result.current_run_time) {
+					console.log(`\n⏱️  TIMING INFORMATION:`);
+					console.log(`   Last run: ${result.last_run_time}`);
+					console.log(`   Current run: ${result.current_run_time}`);
+					console.log(`   Time between runs: ${result.time_between_runs || 'N/A'}`);
 				}
 			} else {
-				console.error(`❌ Error: ${result.error || result.message}`);
+				console.error(`❌ Error details: ${result.error || 'Unknown error'}`);
+				if (result.status) {
+					console.error(`HTTP Status: ${result.status}`);
+				}
 			}
+			
+			console.log('-'.repeat(80));
+			console.log(`🏁 CRON JOB COMPLETED at ${cronEndTime.toISOString()}`);
+			console.log('='.repeat(80) + '\n');
+			
 		} catch (error) {
-			console.error(`❌ Fatal error in scheduled task:`, error);
+			const cronEndTime = new Date();
+			const durationMs = cronEndTime - cronStartTime;
+			const durationSeconds = (durationMs / 1000).toFixed(2);
+			
+			console.error('\n' + '!'.repeat(80));
+			console.error(`❌ FATAL ERROR IN CRON JOB`);
+			console.error(`Error: ${error.message}`);
+			console.error(`Stack: ${error.stack}`);
+			console.error(`Duration before failure: ${durationSeconds} seconds`);
+			console.error(`Time: ${cronEndTime.toISOString()}`);
+			console.error('!'.repeat(80) + '\n');
 		}
 	},
 };
@@ -94,8 +141,9 @@ curl "http://localhost:8787/__scheduled?cron=*/5+*+*+*+*"
 /**
  * Trigger the birthday check endpoint on the Flask backend
  */
-async function triggerBirthdayCheck(env) {
+async function triggerBirthdayCheck(env, cronStartTime) {
 	const url = `${BACKEND_URL}${BIRTHDAY_ENDPOINT}`;
+	const requestStartTime = new Date();
 	
 	try {
 		// Prepare headers with API key if available
@@ -107,18 +155,34 @@ async function triggerBirthdayCheck(env) {
 		// Add API key from environment if set
 		if (env.API_KEY) {
 			headers['X-API-Key'] = env.API_KEY;
+			console.log(`🔐 API Key: Present`);
+		} else {
+			console.log(`⚠️  API Key: Not configured`);
 		}
 		
-		console.log(`📡 Calling: ${url}`);
+		console.log(`\n📡 BACKEND REQUEST`);
+		console.log(`   URL: ${url}`);
+		console.log(`   Method: POST`);
+		console.log(`   Request time: ${requestStartTime.toISOString()}`);
 		
 		const response = await fetch(url, {
 			method: 'POST',
 			headers: headers
 		});
 		
+		const responseTime = new Date();
+		const requestDuration = responseTime - requestStartTime;
+		
+		console.log(`\n📥 BACKEND RESPONSE`);
+		console.log(`   Status: ${response.status} ${response.statusText}`);
+		console.log(`   Response time: ${responseTime.toISOString()}`);
+		console.log(`   Request duration: ${requestDuration}ms`);
+		
 		const data = await response.json();
 		
 		if (!response.ok) {
+			console.error(`❌ Backend returned error status ${response.status}`);
+			console.error(`   Error: ${data.message || data.error || 'Unknown error'}`);
 			return {
 				success: false,
 				error: data.message || data.error || 'Unknown error',
@@ -127,16 +191,32 @@ async function triggerBirthdayCheck(env) {
 			};
 		}
 		
+		console.log(`✅ Backend processed successfully`);
+		if (data.emails_sent && data.emails_sent.length > 0) {
+			console.log(`   📨 Backend sent ${data.emails_sent.length} email(s)`);
+		}
+		
 		return {
 			success: true,
 			message: data.message || 'Birthday check completed',
 			emails_sent: data.emails_sent || [],
 			backend_timestamp: data.timestamp,
-			timestamp: new Date().toISOString()
+			timestamp: new Date().toISOString(),
+			last_run_time: data.last_run_time,
+			current_run_time: data.current_run_time,
+			time_between_runs: data.time_between_runs
 		};
 		
 	} catch (error) {
-		console.error(`Error calling backend:`, error);
+		const errorTime = new Date();
+		const requestDuration = errorTime - requestStartTime;
+		
+		console.error(`\n❌ ERROR CALLING BACKEND`);
+		console.error(`   Error: ${error.message}`);
+		console.error(`   Time: ${errorTime.toISOString()}`);
+		console.error(`   Duration before error: ${requestDuration}ms`);
+		console.error(`   Stack: ${error.stack}`);
+		
 		return {
 			success: false,
 			error: error.message,

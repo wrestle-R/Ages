@@ -164,22 +164,24 @@ def send_email(to_email, subject, body):
         return False
 
 def get_birthday_email_html(name, is_exact_time=False):
-    """Generate HTML content for birthday email"""
+    """Generate excited, casual, minimal black-and-white birthday email"""
     if is_exact_time:
         return f"""
         <html>
-            <body style="font-family: Arial, sans-serif; text-align: center; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-                <div style="background: white; border-radius: 15px; padding: 40px; max-width: 600px; margin: 0 auto;">
-                    <h1 style="color: #667eea; font-size: 36px;">🎂 Happy Birthday {name}! 🎂</h1>
-                    <h2 style="color: #764ba2; font-size: 24px; margin-top: 20px;">
-                        This is the exact moment you were born!
-                    </h2>
-                    <p style="font-size: 18px; color: #333; margin-top: 20px;">
-                        At this precise time, years ago, you came into this world and made it a better place. 
-                        We're so grateful to celebrate this special moment with you!
+            <body style="font-family: Inter, Arial, sans-serif; background: #fff; color: #000; text-align: center; padding: 40px;">
+                <div style="border: 1px solid #ddd; border-radius: 10px; padding: 50px; max-width: 600px; margin: 0 auto;">
+                    <h1 style="font-size: 32px; margin-bottom: 10px;">HAPPPY BIRTHDAY {name.upper()}!!!</h1>
+                    <p style="font-size: 16px; margin-top: 20px;">
+                        brooo it’s literally the exact time u were born, absolutely crazyyy
                     </p>
-                    <p style="font-size: 20px; color: #667eea; margin-top: 30px; font-weight: bold;">
-                        May this year bring you joy, success, and all the happiness you deserve! 🎉
+                    <p style="font-size: 16px; margin-top: 15px;">
+                        some great many years ago, on this exact moment u were born and the world is slightly better for it
+                    </p>
+                    <p style="font-size: 14px; margin-top: 30px; color: #555;">
+                        – ages fam<br>
+                        <a href="https://ages-fam.vercel.app" style="color: #000; text-decoration: none;">
+                            ages-fam.vercel.app
+                        </a>
                     </p>
                 </div>
             </body>
@@ -188,17 +190,20 @@ def get_birthday_email_html(name, is_exact_time=False):
     else:
         return f"""
         <html>
-            <body style="font-family: Arial, sans-serif; text-align: center; padding: 20px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
-                <div style="background: white; border-radius: 15px; padding: 40px; max-width: 600px; margin: 0 auto;">
-                    <h1 style="color: #f5576c; font-size: 36px;">🎉 Happy Birthday {name}! 🎉</h1>
-                    <p style="font-size: 20px; color: #333; margin-top: 20px;">
-                        Wishing you a fantastic day filled with love, laughter, and joy!
+            <body style="font-family: Inter, Arial, sans-serif; background: #fff; color: #000; text-align: center; padding: 40px;">
+                <div style="border: 1px solid #ddd; border-radius: 10px; padding: 50px; max-width: 600px; margin: 0 auto;">
+                    <h1 style="font-size: 32px; margin-bottom: 10px;">HAPPPPY BIRTHDAY {name.upper()}!!!</h1>
+                    <p style="font-size: 16px; margin-top: 20px;">
+                        umer horra haai bro, UNC status now 
                     </p>
-                    <p style="font-size: 18px; color: #666; margin-top: 20px;">
-                        May all your dreams come true this year. Have an amazing birthday celebration! 🎂🎈
+                    <p style="font-size: 16px; margin-top: 15px;">
+                        hope u have a wonderful year ahead sirrr, and stop being gay
                     </p>
-                    <p style="font-size: 20px; color: #f5576c; margin-top: 30px; font-weight: bold;">
-                        Cheers to another year of wonderful memories! 🥳
+                    <p style="font-size: 14px; margin-top: 30px; color: #555;">
+                        – ages fam<br>
+                        <a href="https://ages-fam.vercel.app" style="color: #000; text-decoration: none;">
+                                    ages-fam.vercel.app                    
+                        </a>
                     </p>
                 </div>
             </body>

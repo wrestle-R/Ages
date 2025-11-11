@@ -31,6 +31,9 @@ SMTP_PORT = int(os.getenv('SMTP_PORT', 587))
 # File to store last run timestamp
 LAST_RUN_FILE = 'last_run.json'
 
+# Path to the birthdays JSON file
+BIRTHDAYS_FILE = 'birthdays.json'
+
 def get_last_run_time():
     """Get the last time birthday emails were checked"""
     try:
@@ -185,62 +188,20 @@ def check_and_send_birthday_emails():
     
     return emails_sent
 
-birthdays = {
-    "Aliqyaan": {
-        "date": "2005-10-19", 
-        "time": "13:15",
-        "email": "russeldanielpaul@gmail.com",
-        "phone": "+1234567890"
-    },
-    "Russel": {
-        "date": "2005-10-19", 
-        "time": "14:30",
-        "email": "russeldanielpaul@gmail.com",
-        "phone": "+1234567890"
-    },
-    "Romeiro": {
-        "date": "2005-10-20", 
-        "time": "11:40",
-        "email": "russeldanielpaul@gmail.com",
-        "phone": "+1234567890"
-    },
-    "Dylan": {
-        "date": "2006-05-13", 
-        "time": "11:35",
-        "email": "russeldanielpaul@gmail.com",
-        "phone": "+1234567890"
-    },
-    "Gavin": {
-        "date": "2005-03-10", 
-        "time": "21:14",
-        "email": "russeldanielpaul@gmail.com",
-        "phone": "+1234567890"
-    },
-    "Rhea": {
-        "date": "2006-01-03", 
-        "time": "00:00",
-        "email": "russeldanielpaul@gmail.com",
-        "phone": "+1234567890"
-    },
-    "Moiz": {
-        "date": "2005-02-15", 
-        "time": "00:00",
-        "email": "russeldanielpaul@gmail.com",
-        "phone": "+1234567890"
-    },
-    "Rohan": {
-        "date": "2004-11-12", 
-        "time": "10:12",
-        "email": "russeldanielpaul@gmail.com",
-        "phone": "+1234567890"
-    },
-    "Reniyas": {
-        "date": "2005-09-19", 
-        "time": "11:50",
-        "email": "russeldanielpaul@gmail.com",
-        "phone": "+1234567890"
-    }
-}
+def load_birthdays():
+    """Load birthdays from a JSON file."""
+    try:
+        if os.path.exists(BIRTHDAYS_FILE):
+            with open(BIRTHDAYS_FILE, 'r') as f:
+                return json.load(f)
+        else:
+            print(f"Warning: {BIRTHDAYS_FILE} not found. Using empty birthdays list.")
+            return {}
+    except Exception as e:
+        print(f"Error loading birthdays: {e}")
+        return {}
+
+birthdays = load_birthdays()
 
 @app.route("/api/age")
 def get_ages():

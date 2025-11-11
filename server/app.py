@@ -19,7 +19,7 @@ CORS(app, origins=[
     "http://127.0.0.1:5173",
     "http://localhost:5173/",
     "http://127.0.0.1:5173/",
-    'https://ages-fam.vercel.app/'
+    'https://ages-fam.vercel.app/',
     '*'
 ])
 
@@ -309,7 +309,11 @@ def health():
     try:
         return jsonify({
             "status": "healthy",
-            "timestamp": datetime.now(IST).isoformat()
+            "service": "birthday-email-api",
+            "timestamp": datetime.now(IST).isoformat(),
+            "birthdays_loaded": len(birthdays),
+            "email_configured": bool(EMAIL_ADDRESS and EMAIL_PASSWORD),
+            "api_key_required": bool(os.getenv('API_KEY'))
         })
     except Exception as e:
         return jsonify({"status": "unhealthy", "error": str(e)}), 500
@@ -318,33 +322,53 @@ def health():
 def send_birthday_emails_endpoint():
     """
     Endpoint to trigger birthday email checking.
-    Called by GitHub Actions cron job or manually.
+    Called by Cloudflare Workers cron job or manually.
     """
     try:
+        # Log the request for debugging
+        print(f"Birthday email check triggered at {datetime.now(IST).isoformat()}")
+        print(f"Request method: {request.method}")
+        print(f"Request headers: {dict(request.headers)}")
+        
         # Optional API key authentication
         api_key = request.headers.get('X-API-Key') or request.args.get('api_key')
         expected_api_key = os.getenv('API_KEY')
         
         # If API_KEY is set in environment, require it
         if expected_api_key and api_key != expected_api_key:
+            print(f"❌ Unauthorized access attempt")
             return jsonify({
                 "error": "Unauthorized",
                 "message": "Invalid or missing API key"
             }), 401
         
+        print("✅ API key validated" if expected_api_key else "⚠️ No API key required")
+        
+        # Check and send birthday emails
         emails_sent = check_and_send_birthday_emails()
         
-        return jsonify({
+        response_data = {
             "status": "success",
             "message": f"Birthday check completed. {len(emails_sent)} email(s) sent.",
             "emails_sent": emails_sent,
             "timestamp": datetime.now(IST).isoformat()
-        })
+        }
+        
+        print(f"✅ Success: {response_data['message']}")
+        if emails_sent:
+            print(f"📧 Emails sent: {json.dumps(emails_sent, indent=2)}")
+        
+        return jsonify(response_data)
+        
     except Exception as e:
-        print(f"Error in send_birthday_emails_endpoint: {str(e)}")
+        error_msg = str(e)
+        print(f"❌ Error in send_birthday_emails_endpoint: {error_msg}")
+        import traceback
+        traceback.print_exc()
+        
         return jsonify({
             "status": "error",
-            "message": str(e),
+            "message": error_msg,
             "timestamp": datetime.now(IST).isoformat()
         }), 500
 
@@ -396,12 +420,21 @@ def test_email_endpoint():
         }), 500
 
 if __name__ == "__main__":
-    print("Birthday Email System Starting...")
-    print(f"Email sender configured: {EMAIL_ADDRESS}")
-    print(f"SMTP Host: {SMTP_HOST}:{SMTP_PORT}")
-    print("API Endpoints:")
-    print("  - /api/send-birthday-emails (triggered by GitHub Actions)")
-    print("  - /api/test-email (for testing email configuration)")
-    print("  - /health (health check)")
+    print("🎂 Birthday Email System Starting...")
+    print("=" * 50)
+    print(f"📧 Email sender configured: {EMAIL_ADDRESS}")
+    print(f"🌐 SMTP Host: {SMTP_HOST}:{SMTP_PORT}")
+    print(f"🔐 API Key protection: {'Enabled' if os.getenv('API_KEY') else 'Disabled'}")
+    print(f"👥 Birthdays loaded: {len(birthdays)}")
+    print("\n📡 API Endpoints:")
+    print("  - GET  /health (health check)")
+    print("  - GET  /api/age (get ages)")
+    print("  - GET  /api/birthdays (get birthdays)")
+    print("  - POST /api/send-birthday-emails (Cloudflare Workers cron trigger)")
+    print("  - GET  /api/test-email (test email configuration)")
+    print("\n⏰ Cloudflare Workers Cron:")
+    print("  - Runs every 5 minutes")
+    print("  - Endpoint: https://ages-5g4e.onrender.com/api/send-birthday-emails")
+    print("=" * 50)
     
     app.run(debug=True, host="0.0.0.0", port=8080)

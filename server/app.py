@@ -44,13 +44,24 @@ def get_last_run_time():
         if os.path.exists(LAST_RUN_FILE):
             with open(LAST_RUN_FILE, 'r') as f:
                 data = json.load(f)
-                return datetime.fromisoformat(data['last_run']).replace(tzinfo=IST)
+                last_run = datetime.fromisoformat(data['last_run'])
+                # Ensure timezone-aware datetime
+                if last_run.tzinfo is None:
+                    last_run = last_run.replace(tzinfo=IST)
+                print(f"[DEBUG] Last run time from file: {last_run.isoformat()}")
+                return last_run
         else:
             # If file doesn't exist, assume last run was 15 minutes ago
-            return datetime.now(IST) - timedelta(minutes=15)
+            # This ensures we catch recent birthdays on first run
+            fallback_time = datetime.now(IST) - timedelta(minutes=15)
+            print(f"[DEBUG] No last_run.json found, using fallback: {fallback_time.isoformat()}")
+            # Create the file immediately
+            set_last_run_time(fallback_time)
+            return fallback_time
     except Exception as e:
-        print(f"Error reading last run time: {e}")
-        return datetime.now(IST) - timedelta(minutes=15)
+        print(f"[ERROR] Error reading last run time: {e}")
+        fallback_time = datetime.now(IST) - timedelta(minutes=15)
+        return fallback_time
 
 def set_last_run_time(timestamp):
     """Save the last run timestamp"""
@@ -127,11 +138,16 @@ def check_and_send_birthday_emails():
     """
     Check if it's anyone's birthday and send appropriate emails.
     Uses interval-based checking to ensure no emails are missed.
+    FIXED: Better interval logic to prevent missing emails due to timing issues
     """
     current_time = datetime.now(IST)
     last_run_time = get_last_run_time()
     
-    print(f"Checking birthdays from {last_run_time} to {current_time}")
+    # Add buffer to avoid edge cases (subtract a few seconds from last_run for safety)
+    last_run_buffer = last_run_time - timedelta(seconds=30)
+    
+    print(f"[DEBUG] Checking birthdays from {last_run_buffer} to {current_time}")
+    print(f"[DEBUG] Current IST time: {current_time.strftime('%Y-%m-%d %H:%M:%S')}")
     
     emails_sent = []
     
@@ -149,8 +165,11 @@ def check_and_send_birthday_emails():
         birth_hour = int(time_parts[0])
         birth_minute = int(time_parts[1])
         
+        print(f"[DEBUG] Checking {name}: birth date {birth_month}/{birth_day}, birth time {birth_hour}:{birth_minute:02d}")
+        
         # Check if today is their birthday
         if current_time.month == birth_month and current_time.day == birth_day:
+            print(f"[DEBUG] 🎂 TODAY IS {name}'s BIRTHDAY!")
             
             # Create midnight timestamp for today (IST)
             midnight_today = current_time.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -163,9 +182,13 @@ def check_and_send_birthday_emails():
                 microsecond=0
             )
             
+            print(f"[DEBUG] Midnight: {midnight_today.strftime('%Y-%m-%d %H:%M:%S')}")
+            print(f"[DEBUG] Birth time: {birth_time_today.strftime('%Y-%m-%d %H:%M:%S')}")
+            
             # Check if midnight birthday email should be sent
-            # Send if midnight falls within the interval [last_run_time, current_time]
-            if last_run_time < midnight_today <= current_time:
+            # FIXED: Use <= on both sides for inclusive interval check
+            if last_run_buffer <= midnight_today <= current_time:
+                print(f"[DEBUG] ✅ Sending midnight email to {name}")
                 subject = f"🎉 Happy Birthday {name}!"
                 body = get_birthday_email_html(name, is_exact_time=False)
                 if send_email(email, subject, body):
@@ -174,10 +197,18 @@ def check_and_send_birthday_emails():
                         "type": "midnight",
                         "time": midnight_today.isoformat()
                     })
+                    print(f"[DEBUG] ✅ Midnight email sent to {name}")
+                else:
+                    print(f"[DEBUG] ❌ Failed to send midnight email to {name}")
+            else:
+                print(f"[DEBUG] ⏭️ Midnight email not in interval for {name}")
+                print(f"[DEBUG]    Interval: {last_run_buffer.strftime('%H:%M:%S')} to {current_time.strftime('%H:%M:%S')}")
+                print(f"[DEBUG]    Midnight: {midnight_today.strftime('%H:%M:%S')}")
             
             # Check if exact birth time email should be sent
-            # Send if birth time falls within the interval [last_run_time, current_time]
-            if last_run_time < birth_time_today <= current_time:
+            # FIXED: Use <= on both sides for inclusive interval check
+            if last_run_buffer <= birth_time_today <= current_time:
+                print(f"[DEBUG] ✅ Sending exact birth time email to {name}")
                 subject = f"🎂 {name} - This is Your Exact Birth Moment!"
                 body = get_birthday_email_html(name, is_exact_time=True)
                 if send_email(email, subject, body):
@@ -186,9 +217,17 @@ def check_and_send_birthday_emails():
                         "type": "exact_time",
                         "time": birth_time_today.isoformat()
                     })
+                    print(f"[DEBUG] ✅ Exact time email sent to {name}")
+                else:
+                    print(f"[DEBUG] ❌ Failed to send exact time email to {name}")
+            else:
+                print(f"[DEBUG] ⏭️ Exact time email not in interval for {name}")
+                print(f"[DEBUG]    Interval: {last_run_buffer.strftime('%H:%M:%S')} to {current_time.strftime('%H:%M:%S')}")
+                print(f"[DEBUG]    Birth time: {birth_time_today.strftime('%H:%M:%S')}")
     
     # Update last run time
     set_last_run_time(current_time)
+    print(f"[DEBUG] Updated last run time to {current_time.isoformat()}")
     
     return emails_sent
 

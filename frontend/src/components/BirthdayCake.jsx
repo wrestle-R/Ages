@@ -8,23 +8,30 @@ const BirthdayCake = ({ person, onClose }) => {
   const age = Math.floor(person.currentAge);
 
   useEffect(() => {
-    // Calculate candle positions
+    // Calculate candle positions with improved distribution
     const positions = [];
-    let candleHalfCount = 1;
     const candleCount = Math.min(age, 30); // Max 30 candles
+    
+    if (candleCount === 0) {
+      setCandlePositions([]);
+      setLitCandles([]);
+      return;
+    }
+
+    // Create a nice arc distribution for candles
+    const cakeWidth = 550; // Slightly smaller than cake width for margin
+    const cakeStartX = -275; // Center the distribution
+    const spacing = cakeWidth / (candleCount + 1); // Even spacing
 
     for (let i = 0; i < candleCount; i++) {
-      if (i + 1 < candleCount / 2) candleHalfCount++;
-      else if (i + 1 > candleCount / 2) candleHalfCount--;
-
-      const candleXPositionOffset = candleHalfCount * (20 / (candleCount / 2));
-      const candleXPosition = -310 + 600 / candleCount / 2 + (600 / candleCount) * i;
-      const candleYPosition =
-        -1 *
-        Math.floor(
-          Math.random() * (325 + candleXPositionOffset - (320 - candleXPositionOffset) + 1) +
-            (320 - candleXPositionOffset)
-        );
+      // Calculate X position with even spacing
+      const candleXPosition = cakeStartX + spacing * (i + 1);
+      
+      // Calculate Y position with slight randomness for natural look
+      // Keep candles mostly at top of cake with small variation
+      const baseY = -320; // Base position at top of cake
+      const randomVariation = Math.random() * 15 - 7.5; // ±7.5px variation
+      const candleYPosition = baseY + randomVariation;
 
       positions.push({
         id: i,
@@ -161,11 +168,10 @@ const BirthdayCake = ({ person, onClose }) => {
           initial={{ scale: 0.8, y: 50 }}
           animate={{ scale: 1, y: 0 }}
           transition={{ type: "spring", damping: 15 }}
-          className="relative"
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
           style={{
-            width: "min(600px, 90vw)",
-            height: "min(500px, 70vh)",
-            transform: "scale(1)",
+            width: "600px",
+            height: "500px",
           }}
         >
           {/* Candles */}
@@ -175,15 +181,13 @@ const BirthdayCake = ({ person, onClose }) => {
               initial={{ scale: 0, y: -50 }}
               animate={{ scale: 1, y: 0 }}
               transition={{ delay: index * 0.03, type: "spring" }}
-              className="candle-component"
+              className="candle-component absolute"
               style={{
-                position: "absolute",
                 width: "18px",
                 height: "100px",
                 top: "50%",
                 left: "50%",
-                marginLeft: `${candle.x}px`,
-                marginTop: `${candle.y}px`,
+                transform: `translate(${candle.x}px, ${candle.y}px)`,
                 background: "#ffffff",
                 borderTopLeftRadius: "10px",
                 borderTopRightRadius: "10px",
@@ -255,15 +259,10 @@ const BirthdayCake = ({ person, onClose }) => {
 
           {/* Cake */}
           <motion.div
-            className="cake-component"
+            className="cake-component absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
             style={{
-              position: "absolute",
-              width: "100%",
+              width: "600px",
               height: "500px",
-              top: "50%",
-              left: "50%",
-              marginTop: "-250px",
-              marginLeft: "-50%",
               cursor: "pointer",
             }}
             onClick={putOutAllCandles}
@@ -480,15 +479,25 @@ const BirthdayCake = ({ person, onClose }) => {
             animation: flame 2s infinite;
           }
 
+          /* Responsive cake scaling */
+          @media (max-width: 1200px) {
+            .cake-component,
+            .cake-component ~ div {
+              transform: scale(0.85) !important;
+            }
+          }
+
           @media (max-width: 768px) {
-            .cake-component {
-              transform: scale(0.7);
+            .cake-component,
+            .cake-component ~ div {
+              transform: scale(0.7) !important;
             }
           }
 
           @media (max-width: 480px) {
-            .cake-component {
-              transform: scale(0.5);
+            .cake-component,
+            .cake-component ~ div {
+              transform: scale(0.55) !important;
             }
           }
         `}</style>

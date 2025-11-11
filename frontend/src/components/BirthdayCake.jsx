@@ -276,33 +276,92 @@ const BirthdayCake = ({ candles = 9, name = null, messages = [], onClose }) => {
             .message {
               font-size: 48px;
             }
+            .candle {
+              transform: scale(1.1);
+            }
           }
 
           @media (max-width: 768px) {
             .cake {
-              transform: scale(0.75);
+              transform: scale(0.65);
             }
             .message {
               width: 90vw;
               margin-left: -45vw;
-              font-size: 32px;
+              margin-top: 220px;
+              font-size: 28px;
             }
             .candle {
-              transform: scale(0.75);
+              transform: scale(0.65);
+            }
+            
+            /* Scale candle positions for tablet */
+            .candle {
+              margin-left: calc(var(--candle-x) * 0.65) !important;
+              margin-top: calc(var(--candle-y) * 0.65) !important;
+            }
+          }
+
+          @media (max-width: 640px) {
+            .cake {
+              transform: scale(0.55);
+            }
+            .message {
+              width: 95vw;
+              margin-left: -47.5vw;
+              margin-top: 200px;
+              font-size: 24px;
+            }
+            .candle {
+              transform: scale(0.55);
+            }
+            
+            /* Scale candle positions for small tablet */
+            .candle {
+              margin-left: calc(var(--candle-x) * 0.55) !important;
+              margin-top: calc(var(--candle-y) * 0.55) !important;
             }
           }
 
           @media (max-width: 480px) {
             .cake {
-              transform: scale(0.5);
+              transform: scale(0.45);
             }
             .message {
               width: 95vw;
               margin-left: -47.5vw;
-              font-size: 24px;
+              margin-top: 180px;
+              font-size: 20px;
             }
             .candle {
-              transform: scale(0.5);
+              transform: scale(0.45);
+            }
+            
+            /* Scale candle positions for mobile */
+            .candle {
+              margin-left: calc(var(--candle-x) * 0.45) !important;
+              margin-top: calc(var(--candle-y) * 0.45) !important;
+            }
+          }
+
+          @media (max-width: 380px) {
+            .cake {
+              transform: scale(0.38);
+            }
+            .message {
+              width: 95vw;
+              margin-left: -47.5vw;
+              margin-top: 165px;
+              font-size: 18px;
+            }
+            .candle {
+              transform: scale(0.38);
+            }
+            
+            /* Scale candle positions for small mobile */
+            .candle {
+              margin-left: calc(var(--candle-x) * 0.38) !important;
+              margin-top: calc(var(--candle-y) * 0.38) !important;
             }
           }
         `}</style>
@@ -313,10 +372,10 @@ const BirthdayCake = ({ candles = 9, name = null, messages = [], onClose }) => {
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.9 }}
           transition={{ type: "spring", damping: 25 }}
-          className="birthday-cake-modal rounded-3xl overflow-hidden shadow-2xl relative"
+          className="birthday-cake-modal rounded-2xl md:rounded-3xl overflow-hidden shadow-2xl relative mx-2 md:mx-0"
           style={{
-            width: "85vw",
-            height: "85vh",
+            width: window.innerWidth >= 768 ? "85vw" : "95vw",
+            height: window.innerWidth >= 768 ? "85vh" : "90vh",
             maxWidth: "1100px",
             maxHeight: "850px",
             cursor: 'default'
@@ -330,7 +389,7 @@ const BirthdayCake = ({ candles = 9, name = null, messages = [], onClose }) => {
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
             onClick={onClose}
-            className="absolute top-6 right-6 text-white hover:text-white text-2xl font-bold bg-black/30 backdrop-blur-md rounded-full w-14 h-14 flex items-center justify-center border-2 border-white/30 hover:border-white/50 hover:bg-black/50 transition-all shadow-xl z-50"
+            className="absolute top-3 right-3 md:top-6 md:right-6 text-white hover:text-white text-xl md:text-2xl font-bold bg-black/30 backdrop-blur-md rounded-full w-10 h-10 md:w-14 md:h-14 flex items-center justify-center border-2 border-white/30 hover:border-white/50 hover:bg-black/50 transition-all shadow-xl z-50"
           >
             <FaTimes />
           </motion.button>
@@ -354,6 +413,8 @@ const BirthdayCake = ({ candles = 9, name = null, messages = [], onClose }) => {
                 key={candle.id}
                 className="candle"
                 style={{
+                  '--candle-x': `${candle.x}px`,
+                  '--candle-y': `${candle.y}px`,
                   marginLeft: `${candle.x}px`,
                   marginTop: `${candle.y}px`,
                 }}
@@ -384,6 +445,7 @@ const BirthdayCake = ({ candles = 9, name = null, messages = [], onClose }) => {
 
             {/* Instruction text */}
             <div 
+              className="instruction-text"
               style={{
                 position: 'absolute',
                 bottom: '20px',
@@ -398,7 +460,8 @@ const BirthdayCake = ({ candles = 9, name = null, messages = [], onClose }) => {
                 zIndex: 10
               }}
             >
-              Click candles to blow them out • Click cake to blow all out
+              <span className="hidden md:inline">Click candles to blow them out • Click cake to blow all out</span>
+              <span className="md:hidden text-sm">Tap candles to blow out</span>
             </div>
           </div>
         </motion.div>

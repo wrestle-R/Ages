@@ -23,6 +23,7 @@ CORS(app, origins=[
     "http://localhost:5173/",
     "http://127.0.0.1:5173/",
     'https://ages-fam.vercel.app/',
+    'https://ages-frandsss.vercel.app'
     '*'
 ])
 
@@ -179,8 +180,8 @@ def get_birthday_email_html(name, is_exact_time=False):
                     </p>
                     <p style="font-size: 14px; margin-top: 30px; color: #555;">
                         – ages fam<br>
-                        <a href="https://ages-fam.vercel.app" style="color: #000; text-decoration: none;">
-                            ages-fam.vercel.app
+                        <a href="https://ages-frandsss.vercel.app" style="color: #000; text-decoration: none;">
+                            ages-frandsss.vercel.app
                         </a>
                     </p>
                 </div>
@@ -201,8 +202,8 @@ def get_birthday_email_html(name, is_exact_time=False):
                     </p>
                     <p style="font-size: 14px; margin-top: 30px; color: #555;">
                         – ages fam<br>
-                        <a href="https://ages-fam.vercel.app" style="color: #000; text-decoration: none;">
-                                    ages-fam.vercel.app                    
+                        <a href="https://ages-frandsss.vercel.app" style="color: #000; text-decoration: none;">
+                                    ages-frandsss.vercel.app                    
                         </a>
                     </p>
                 </div>

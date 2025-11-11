@@ -96,18 +96,26 @@ const Countdown = () => {
     const countdown = calculateCountdown(person, time);
     const birthday = isBirthdayToday(person, time);
     
-    // Recalculate current age in real-time
+    // Recalculate current age in real-time with validation
     const birthDate = new Date(
       person.year,
       person.month - 1,
       person.day,
-      person.hour,
-      person.minute,
+      person.hour || 0,
+      person.minute || 0,
       0,
       0
     );
+    
+    // Validate the birth date
     const ageMs = time - birthDate;
-    const ageYears = ageMs / (1000 * 60 * 60 * 24 * 365.25);
+    let ageYears = ageMs / (1000 * 60 * 60 * 24 * 365.25);
+    
+    // Ensure age is valid and reasonable
+    if (!isFinite(ageYears) || ageYears < 0 || ageYears > 150) {
+      console.warn(`Invalid age calculated for ${person.name}:`, ageYears);
+      ageYears = 0;
+    }
 
     return {
       ...person,

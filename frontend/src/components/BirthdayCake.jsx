@@ -5,14 +5,17 @@ import { FaTimes } from "react-icons/fa";
 const BirthdayCake = ({ person, onClose }) => {
   const [litCandles, setLitCandles] = useState([]);
   const [candlePositions, setCandlePositions] = useState([]);
-  const age = Math.floor(person.currentAge);
+  
+  // Safely calculate age with bounds checking
+  const rawAge = person.currentAge || 0;
+  const age = Math.max(0, Math.min(Math.floor(rawAge), 100)); // Cap between 0 and 100
 
   useEffect(() => {
     // Calculate candle positions with improved distribution
     const positions = [];
     const candleCount = Math.min(age, 30); // Max 30 candles
     
-    if (candleCount === 0) {
+    if (candleCount <= 0 || !isFinite(candleCount)) {
       setCandlePositions([]);
       setLitCandles([]);
       return;
@@ -95,7 +98,7 @@ const BirthdayCake = ({ person, onClose }) => {
         {/* Confetti effect when all candles are out */}
         {allCandlesOut && litCandles.length > 0 && (
           <div className="absolute inset-0 pointer-events-none overflow-hidden">
-            {[...Array(100)].map((_, i) => (
+            {Array.from({ length: Math.min(100, litCandles.length * 10) }, (_, i) => i).map((i) => (
               <motion.div
                 key={i}
                 initial={{

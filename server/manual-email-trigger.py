@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
-BACKEND_URL = "http://localhost:8080"
+BACKEND_URL = "https://ages-5g4e.onrender.com"
 # For production: BACKEND_URL = "https://ages-5g4e.onrender.com"
 
 API_KEY = os.getenv('API_KEY')  # Load API key from .env

@@ -6,6 +6,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
+import BirthdayCake from "./BirthdayCake";
 
 const getZodiacSign = (month, day) => {
   const zodiacSigns = [
@@ -35,6 +36,7 @@ const getZodiacSign = (month, day) => {
 
 const BirthdayCard = ({ person, countdown, isBirthday, onClick }) => {
   const [open, setOpen] = React.useState(false);
+  const [showCake, setShowCake] = React.useState(false);
   const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
 
   const zodiacSign = getZodiacSign(person.month, person.day);
@@ -42,28 +44,47 @@ const BirthdayCard = ({ person, countdown, isBirthday, onClick }) => {
   // Convert countdown to days with 8 decimal places
   const daysUntilBirthday = countdown.totalDays.toFixed(8);
 
+  const handleCardClick = () => {
+    if (isMobile) {
+      setOpen((prev) => !prev);
+    } else if (isBirthday) {
+      setShowCake(true);
+    } else if (onClick) {
+      onClick();
+    }
+  };
+
   return (
-    <Tooltip
-      open={isMobile ? open : undefined}
-      onOpenChange={isMobile ? setOpen : undefined}
-    >
-      <TooltipTrigger asChild>
-        <div
-          className={`
-            relative group cursor-pointer
-            bg-white/5 backdrop-blur-md border-2
-            rounded-2xl px-6 py-5
-            transition-all duration-500 ease-out
-            hover:scale-[1.02] hover:shadow-2xl
-            ${
-              isBirthday
-                ? "border-white/40 bg-white/10 animate-pulse shadow-2xl shadow-white/20"
-                : "border-white/10 hover:border-white/30 hover:shadow-white/10"
-            }
-            select-none
-          `}
-          onClick={isMobile ? () => setOpen((prev) => !prev) : onClick}
-        >
+    <>
+      {showCake && isBirthday && (
+        <BirthdayCake
+          candles={Math.min(Math.floor(person.currentAge), 100)}
+          name={person.name}
+          onClose={() => setShowCake(false)}
+        />
+      )}
+      
+      <Tooltip
+        open={isMobile ? open : undefined}
+        onOpenChange={isMobile ? setOpen : undefined}
+      >
+        <TooltipTrigger asChild>
+          <div
+            className={`
+              relative group cursor-pointer
+              bg-white/5 backdrop-blur-md border-2
+              rounded-2xl px-6 py-5
+              transition-all duration-500 ease-out
+              hover:scale-[1.02] hover:shadow-2xl
+              ${
+                isBirthday
+                  ? "border-white/40 bg-white/10 animate-pulse shadow-2xl shadow-white/20"
+                  : "border-white/10 hover:border-white/30 hover:shadow-white/10"
+              }
+              select-none
+            `}
+            onClick={handleCardClick}
+          >
           <div className="flex items-start gap-4">
             {/* Icon */}
             <div
@@ -163,6 +184,7 @@ const BirthdayCard = ({ person, countdown, isBirthday, onClick }) => {
         </div>
       </TooltipContent>
     </Tooltip>
+    </>
   );
 };
 

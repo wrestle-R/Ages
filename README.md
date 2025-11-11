@@ -1,2 +1,1 @@
-# Ages
-I am ashamed of myself for making this
+a small project that sends fun birthday emails to my fransss at the exact time they were born, dumb shit really....

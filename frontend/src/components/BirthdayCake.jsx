@@ -17,12 +17,16 @@ const BirthdayCake = ({ candles = 9, name = null, messages = [], onClose }) => {
     const candleArray = [];
     let candleHalfCount = 1;
 
-    for (let i = 0; i < candles; i++) {
-      if ((i + 1) < (candles / 2)) candleHalfCount++;
-      else if ((i + 1) > (candles / 2)) candleHalfCount--;
+    // Use only 6 candles on mobile screens
+    const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
+    const candleCount = isMobile ? 6 : candles;
 
-      const candleXPositionOffset = candleHalfCount * (20 / (candles / 2));
-      const candleXPosition = ((-310 + (600 / candles) / 2) + ((600 / candles) * i));
+    for (let i = 0; i < candleCount; i++) {
+      if ((i + 1) < (candleCount / 2)) candleHalfCount++;
+      else if ((i + 1) > (candleCount / 2)) candleHalfCount--;
+
+      const candleXPositionOffset = candleHalfCount * (20 / (candleCount / 2));
+      const candleXPosition = ((-310 + (600 / candleCount) / 2) + ((600 / candleCount) * i));
       const candleYPosition = -1 * Math.floor(Math.random() * ((325 + candleXPositionOffset) - (320 - candleXPositionOffset) + 1) + (320 - candleXPositionOffset));
 
       candleArray.push({

@@ -2,13 +2,16 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 from datetime import datetime, timedelta
 import calendar
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
 from dotenv import load_dotenv
 import os
 import json
 from pytz import timezone
+import base64
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from google.oauth2.credentials import Credentials
+from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
 
 # Load environment variables
 load_dotenv()
@@ -23,11 +26,38 @@ CORS(app, origins=[
     '*'
 ])
 
-# Email configuration
-EMAIL_ADDRESS = os.getenv('EMAIL_ADDRESS')
-EMAIL_PASSWORD = os.getenv('EMAIL_PASSWORD')
-SMTP_HOST = os.getenv('SMTP_HOST')
-SMTP_PORT = int(os.getenv('SMTP_PORT', 587))
+# Gmail API configuration
+SCOPES = ['https://www.googleapis.com/auth/gmail.send']
+EMAIL_ADDRESS = os.getenv('EMAIL_ADDRESS', 'russeldanielpaul@gmail.com')
+REFRESH_TOKEN = os.getenv('GMAIL_REFRESH_TOKEN')
+
+# Load credentials from credentials.json
+def load_gmail_credentials():
+    """Load and create Gmail API credentials"""
+    try:
+        if not REFRESH_TOKEN:
+            print("ERROR: GMAIL_REFRESH_TOKEN not found in environment variables")
+            return None
+            
+        with open('credentials.json', 'r') as f:
+            creds_data = json.load(f)
+            client_id = creds_data['web']['client_id']
+            client_secret = creds_data['web']['client_secret']
+            token_uri = creds_data['web']['token_uri']
+        
+        # Create credentials object with refresh token
+        creds = Credentials(
+            token=None,
+            refresh_token=REFRESH_TOKEN,
+            token_uri=token_uri,
+            client_id=client_id,
+            client_secret=client_secret,
+            scopes=SCOPES
+        )
+        return creds
+    except Exception as e:
+        print(f"Error loading Gmail credentials: {e}")
+        return None
 
 # File to store last run timestamp
 LAST_RUN_FILE = 'last_run.json'
@@ -72,24 +102,46 @@ def set_last_run_time(timestamp):
         print(f"Error saving last run time: {e}")
 
 def send_email(to_email, subject, body):
-    """Send an email using Gmail SMTP"""
+    """Send an email using Gmail API"""
     try:
-        msg = MIMEMultipart()
-        msg['From'] = EMAIL_ADDRESS
-        msg['To'] = to_email
-        msg['Subject'] = subject
+        # Load credentials
+        creds = load_gmail_credentials()
+        if not creds:
+            print("Failed to load Gmail credentials")
+            return False
         
-        msg.attach(MIMEText(body, 'html'))
+        # Build the Gmail service
+        service = build('gmail', 'v1', credentials=creds)
         
-        with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
-            server.starttls()
-            server.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
-            server.send_message(msg)
+        # Create the email
+        message = MIMEMultipart('alternative')
+        message['From'] = EMAIL_ADDRESS
+        message['To'] = to_email
+        message['Subject'] = subject
+        
+        # Attach HTML body
+        message.attach(MIMEText(body, 'html'))
+        
+        # Encode the message
+        raw_message = base64.urlsafe_b64encode(message.as_bytes()).decode('utf-8')
+        
+        # Send the email
+        send_result = service.users().messages().send(
+            userId='me',
+            body={'raw': raw_message}
+        ).execute()
         
         print(f"Email sent successfully to {to_email}: {subject}")
+        print(f"Message ID: {send_result.get('id')}")
         return True
+        
+    except HttpError as error:
+        print(f"Gmail API error sending to {to_email}: {error}")
+        return False
     except Exception as e:
         print(f"Failed to send email to {to_email}: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return False
 
 def get_birthday_email_html(name, is_exact_time=False):
@@ -353,12 +405,17 @@ def get_birthdays():
 @app.route("/health")
 def health():
     try:
+        # Check if Gmail credentials are valid
+        creds = load_gmail_credentials()
+        email_configured = creds is not None
+        
         return jsonify({
             "status": "healthy",
             "service": "birthday-email-api",
             "timestamp": datetime.now(IST).isoformat(),
             "birthdays_loaded": len(birthdays),
-            "email_configured": bool(EMAIL_ADDRESS and EMAIL_PASSWORD),
+            "email_configured": email_configured,
+            "email_method": "Gmail API",
             "api_key_required": bool(os.getenv('API_KEY'))
         })
     except Exception as e:
@@ -469,7 +526,7 @@ if __name__ == "__main__":
     print("🎂 Birthday Email System Starting...")
     print("=" * 50)
     print(f"📧 Email sender configured: {EMAIL_ADDRESS}")
-    print(f"🌐 SMTP Host: {SMTP_HOST}:{SMTP_PORT}")
+    print(f"📨 Email method: Gmail API")
     print(f"🔐 API Key protection: {'Enabled' if os.getenv('API_KEY') else 'Disabled'}")
     print(f"👥 Birthdays loaded: {len(birthdays)}")
     print("\n📡 API Endpoints:")

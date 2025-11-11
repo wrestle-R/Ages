@@ -1,3 +1,4 @@
 __pycache__
 .env
 last_run.json
+credentials.json

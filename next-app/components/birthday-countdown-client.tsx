@@ -1,155 +1,153 @@
 "use client"
 
-import { ClockCountdown, Sparkle } from "@phosphor-icons/react"
-import { useEffect, useMemo, useState } from "react"
+import { ArrowRight, Cake, Clock } from "@phosphor-icons/react"
+import { useEffect, useState } from "react"
 import { BirthdayCard } from "@/components/birthday-card"
-import { BirthdayCakeModal } from "@/components/birthday-cake-modal"
+import { birthdays } from "@/lib/birthdays-data"
 import {
-  BIRTHDAYS_DATA,
-} from "@/lib/birthdays-data"
-import {
-  calculateAge,
-  calculateCountdown,
-  getPeopleFromDataset,
+  dateLabel,
   isBirthdayToday,
+  nextBirthdayMoment,
+  timeLabel,
+  turningAge,
 } from "@/lib/birthday-utils"
 
-type DisplayPerson = ReturnType<typeof buildDisplayPeople>[number]
-
-function buildDisplayPeople(now: Date) {
-  return getPeopleFromDataset(BIRTHDAYS_DATA)
-    .map((person) => {
-      const countdown = calculateCountdown(person, now)
-      const birthday = isBirthdayToday(person, now)
-      const currentAge = calculateAge(person, now)
-
-      return {
-        ...person,
-        countdown,
-        isBirthday: birthday,
-        currentAge,
-      }
-    })
-    .sort((a, b) => a.countdown.totalSeconds - b.countdown.totalSeconds)
-}
-
 export function BirthdayCountdownClient() {
-  const [mounted, setMounted] = useState(false)
-  const [now, setNow] = useState(() => new Date())
-  const [selectedPerson, setSelectedPerson] = useState<DisplayPerson | null>(null)
+  const [now, setNow] = useState<Date | null>(null)
 
   useEffect(() => {
-    setMounted(true)
-    let animationFrameId: number
-
-    const tick = () => {
-      setNow(new Date())
-      animationFrameId = requestAnimationFrame(tick)
-    }
-
-    animationFrameId = requestAnimationFrame(tick)
-
-    return () => cancelAnimationFrame(animationFrameId)
+    const update = () => setNow(new Date())
+    update()
+    const interval = window.setInterval(update, 1000)
+    return () => window.clearInterval(interval)
   }, [])
 
-  const people = useMemo(() => buildDisplayPeople(now), [now])
-  const birthdayPerson = people.find((person) => person.isBirthday)
-
-  if (!mounted) {
-    return (
-      <main className="relative min-h-screen overflow-hidden px-4 py-6 sm:px-6 sm:py-10 lg:px-10">
-        <div className="bg-orb bg-orb-one" aria-hidden />
-        <div className="bg-orb bg-orb-two" aria-hidden />
-        <div className="bg-orb bg-orb-three" aria-hidden />
-        <div className="relative mx-auto max-w-7xl">
-          <section className="glass-nav rounded-3xl px-5 py-6 sm:px-8">
-            <div className="flex flex-wrap items-end justify-between gap-5">
-              <div>
-                <p className="text-xs uppercase tracking-[0.3em] text-white/70">Ages</p>
-                <h1 className="mt-2 text-3xl font-semibold text-white sm:text-5xl">Birthday Countdown</h1>
-                <p className="mt-2 max-w-2xl text-sm text-white/70 sm:text-base">
-                  Live timelapse until each next birthday. Built in Next.js with frosted glass visuals and smooth
-                  precision updates.
-                </p>
-              </div>
-            </div>
-          </section>
-        </div>
-      </main>
-    )
-  }
+  const sorted = now
+    ? [...birthdays].sort(
+        (a, b) => nextBirthdayMoment(a, now) - nextBirthdayMoment(b, now)
+      )
+    : [...birthdays]
+  const today = now
+    ? sorted.filter((person) => isBirthdayToday(person, now))
+    : []
+  const featured = today.length ? today : sorted.slice(0, 1)
+  const calendar = now
+    ? [
+        ...today,
+        ...sorted.filter(
+          (person) => !today.some((celebrant) => celebrant.name === person.name)
+        ),
+      ]
+    : sorted
+  const currentDate = now
+    ? new Intl.DateTimeFormat("en-IN", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+        timeZone: "Asia/Kolkata",
+      }).format(now)
+    : "Birthday calendar"
 
   return (
-    <main className="relative min-h-screen overflow-hidden px-4 py-6 sm:px-6 sm:py-10 lg:px-10">
-      <div className="bg-orb bg-orb-one" aria-hidden />
-      <div className="bg-orb bg-orb-two" aria-hidden />
-      <div className="bg-orb bg-orb-three" aria-hidden />
+    <main className="page-shell">
+      <header className="site-header">
+        <a className="wordmark" href="#top" aria-label="Ages, back to top">
+          ages<span>.</span>
+        </a>
+        <div className="header-date">
+          <Clock size={16} aria-hidden="true" /> {currentDate}{" "}
+          <span>· IST</span>
+        </div>
+      </header>
 
-      <div className="relative mx-auto max-w-7xl">
-        <section className="glass-nav rounded-3xl px-5 py-6 sm:px-8">
-          <div className="flex flex-wrap items-end justify-between gap-5">
-            <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-white/70">Ages</p>
-              <h1 className="mt-2 text-3xl font-semibold text-white sm:text-5xl">Birthday Countdown</h1>
-              <p className="mt-2 max-w-2xl text-sm text-white/70 sm:text-base">
-                Live timelapse until each next birthday. Built in Next.js with frosted glass visuals and smooth
-                precision updates.
-              </p>
-            </div>
-
-            <div className="glass-card rounded-2xl px-4 py-3 text-sm text-white/80 sm:text-base">
-              <div className="flex items-center gap-2 text-white">
-                <ClockCountdown size={20} weight="duotone" />
-                <span className="font-medium">{now.toLocaleString()}</span>
-              </div>
-            </div>
+      <div id="top" className="page-content">
+        <section className="intro" aria-labelledby="page-title">
+          <div>
+            <p className="intro-kicker">
+              <Cake size={18} weight="fill" aria-hidden="true" /> THE BIRTHDAY
+              CLUB
+            </p>
+            <h1 id="page-title">
+              Good people.
+              <br />
+              <em>Great birthdays.</em>
+            </h1>
           </div>
+          <p className="intro-note">
+            A little place to keep track of the days worth celebrating.
+          </p>
         </section>
 
-        {birthdayPerson && (
-          <section className="glass-card mt-6 rounded-3xl px-5 py-6 sm:px-8">
-            <div className="flex flex-wrap items-center justify-between gap-4">
-              <div>
-                <p className="text-xs uppercase tracking-[0.26em] text-white/65">Today spotlight</p>
-                <h2 className="mt-2 text-2xl font-semibold text-white sm:text-3xl">
-                  It is {birthdayPerson.name}&apos;s birthday today
-                </h2>
-                <p className="mt-2 text-sm text-white/75">Tap celebrate to open the animated birthday cake.</p>
-              </div>
-
-              <button
-                className="glass-btn inline-flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold text-white"
-                onClick={() => setSelectedPerson(birthdayPerson)}
-              >
-                <Sparkle size={18} weight="fill" />
-                Celebrate now
-              </button>
-            </div>
-          </section>
-        )}
-
-        <section className="mt-6 grid grid-cols-1 gap-4 sm:gap-5 md:grid-cols-2 xl:grid-cols-3">
-          {people.map((person, index) => (
-            <div key={person.name} style={{ animationDelay: `${index * 60}ms` }}>
+        <section
+          className="featured-section"
+          aria-label={today.length ? "Birthdays today" : "Next birthday"}
+        >
+          {now ? (
+            featured.map((person) => (
               <BirthdayCard
+                key={person.name}
                 person={person}
-                countdown={person.countdown}
-                currentAge={person.currentAge}
-                isBirthday={person.isBirthday}
-                onCelebrate={() => setSelectedPerson(person)}
+                now={now}
+                today={today.length > 0}
               />
+            ))
+          ) : (
+            <div
+              className="feature-placeholder"
+              aria-label="Loading birthdays"
+            />
+          )}
+        </section>
+
+        <section
+          className="calendar-section"
+          aria-labelledby="calendar-heading"
+        >
+          <div className="section-heading">
+            <div>
+              <p className="section-kicker">THE PEOPLE</p>
+              <h2 id="calendar-heading">The birthday list</h2>
             </div>
-          ))}
+            <span>{birthdays.length} good reasons to celebrate</span>
+          </div>
+
+          <div className="birthday-list">
+            {calendar.map((person, index) => (
+              <div
+                className={`birthday-row ${now && isBirthdayToday(person, now) ? "birthday-row-today" : ""}`}
+                key={person.name}
+              >
+                <span className="row-index">
+                  {String(index + 1).padStart(2, "0")}
+                </span>
+                <div className="row-avatar" aria-hidden="true">
+                  {person.name.slice(0, 1)}
+                </div>
+                <div className="row-name">
+                  <h3>{person.name}</h3>
+                  <span>
+                    {now && isBirthdayToday(person, now)
+                      ? "Birthday today"
+                      : `Turning ${now ? turningAge(person, now) : "..."}`}
+                  </span>
+                </div>
+                <span className="row-date">{dateLabel(person)}</span>
+                <span className="row-time">{timeLabel(person)} IST</span>
+                <ArrowRight
+                  className="row-arrow"
+                  size={18}
+                  aria-hidden="true"
+                />
+              </div>
+            ))}
+          </div>
         </section>
       </div>
 
-      {selectedPerson && (
-        <BirthdayCakeModal
-          name={selectedPerson.name}
-          age={selectedPerson.currentAge}
-          onClose={() => setSelectedPerson(null)}
-        />
-      )}
+      <footer className="site-footer">
+        <span>Made for the birthdays that matter.</span>
+        <span>All dates and times in India Standard Time.</span>
+      </footer>
     </main>
   )
 }

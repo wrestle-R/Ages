@@ -1,128 +1,71 @@
-import { BIRTHDAYS_DATA, type BirthdayDataset } from "@/lib/birthdays-data"
+import type { Birthday } from "@/lib/birthdays-data"
 
-export type Person = {
-  name: string
-  year: number
-  month: number
-  day: number
-  hour: number
-  minute: number
-  email: string
-  phone: string
-}
+const INDIA_OFFSET_MS = 5.5 * 60 * 60 * 1000
 
-export type CountdownResult = {
-  days: number
-  hours: number
-  minutes: number
-  seconds: number
-  totalSeconds: number
-  totalHours: number
-  totalDays: number
-}
-
-export type Zodiac = {
-  name: string
-  icon: string
-}
-
-const ZODIAC_BOUNDARIES: Array<{ name: string; icon: string; end: [number, number] }> = [
-  { name: "Capricorn", icon: "♑", end: [1, 19] },
-  { name: "Aquarius", icon: "♒", end: [2, 18] },
-  { name: "Pisces", icon: "♓", end: [3, 20] },
-  { name: "Aries", icon: "♈", end: [4, 19] },
-  { name: "Taurus", icon: "♉", end: [5, 20] },
-  { name: "Gemini", icon: "♊", end: [6, 20] },
-  { name: "Cancer", icon: "♋", end: [7, 22] },
-  { name: "Leo", icon: "♌", end: [8, 22] },
-  { name: "Virgo", icon: "♍", end: [9, 22] },
-  { name: "Libra", icon: "♎", end: [10, 22] },
-  { name: "Scorpio", icon: "♏", end: [11, 21] },
-  { name: "Sagittarius", icon: "♐", end: [12, 21] },
-  { name: "Capricorn", icon: "♑", end: [12, 31] },
-]
-
-export function getPeopleFromDataset(data: BirthdayDataset = BIRTHDAYS_DATA): Person[] {
-  return Object.entries(data).map(([name, entry]) => {
-    const [year, month, day] = entry.date.split("-").map(Number)
-    const [hour, minute] = entry.time.split(":").map(Number)
-
-    return {
-      name,
-      year,
-      month,
-      day,
-      hour,
-      minute,
-      email: entry.email,
-      phone: entry.phone,
-    }
-  })
-}
-
-export function calculateCountdown(person: Person, now: Date): CountdownResult {
-  const nextBirthday = new Date(
-    now.getFullYear(),
-    person.month - 1,
-    person.day,
-    person.hour,
-    person.minute,
-    0,
-    0,
-  )
-
-  if (nextBirthday < now) {
-    nextBirthday.setFullYear(now.getFullYear() + 1)
-  }
-
-  const diffMs = nextBirthday.getTime() - now.getTime()
-  const totalSeconds = diffMs / 1000
-  const totalMinutes = totalSeconds / 60
-  const totalHours = totalMinutes / 60
-  const totalDays = totalHours / 24
-
+export function indiaDate(now: Date) {
+  const date = new Date(now.getTime() + INDIA_OFFSET_MS)
   return {
-    days: Math.floor(totalDays),
-    hours: Math.floor(totalHours % 24),
-    minutes: Math.floor(totalMinutes % 60),
-    seconds: Math.floor(totalSeconds % 60),
-    totalSeconds,
-    totalHours,
-    totalDays,
+    year: date.getUTCFullYear(),
+    month: date.getUTCMonth() + 1,
+    day: date.getUTCDate(),
   }
 }
 
-export function calculateAge(person: Person, now: Date): number {
-  const birthDate = new Date(
-    person.year,
-    person.month - 1,
-    person.day,
-    person.hour,
-    person.minute,
-    0,
-    0,
-  )
-
-  const ageYears = (now.getTime() - birthDate.getTime()) / (1000 * 60 * 60 * 24 * 365.25)
-
-  if (!Number.isFinite(ageYears) || ageYears < 0 || ageYears > 150) {
-    return 0
-  }
-
-  return ageYears
+export function birthdayParts(person: Birthday) {
+  const [year, month, day] = person.date.split("-").map(Number)
+  const [hour, minute] = person.time.split(":").map(Number)
+  return { year, month, day, hour, minute }
 }
 
-export function isBirthdayToday(person: Person, now: Date): boolean {
-  return now.getMonth() === person.month - 1 && now.getDate() === person.day
+export function isBirthdayToday(person: Birthday, now: Date) {
+  const today = indiaDate(now)
+  const birth = birthdayParts(person)
+  return today.month === birth.month && today.day === birth.day
 }
 
-export function getZodiacSign(month: number, day: number): Zodiac {
-  for (const sign of ZODIAC_BOUNDARIES) {
-    const [endMonth, endDay] = sign.end
-    if (month < endMonth || (month === endMonth && day <= endDay)) {
-      return { name: sign.name, icon: sign.icon }
-    }
-  }
+export function nextBirthdayMoment(person: Birthday, now: Date) {
+  const today = indiaDate(now)
+  const birth = birthdayParts(person)
+  const moment = (year: number) =>
+    Date.UTC(year, birth.month - 1, birth.day, birth.hour, birth.minute) -
+    INDIA_OFFSET_MS
 
-  return { name: "Capricorn", icon: "♑" }
+  const thisYear = moment(today.year)
+  return thisYear > now.getTime() ? thisYear : moment(today.year + 1)
+}
+
+export function turningAge(person: Birthday, now: Date, today = false) {
+  const year = today
+    ? indiaDate(now).year
+    : indiaDate(new Date(nextBirthdayMoment(person, now))).year
+  return year - birthdayParts(person).year
+}
+
+export function dateLabel(person: Birthday) {
+  const { month, day } = birthdayParts(person)
+  return new Intl.DateTimeFormat("en-IN", {
+    day: "numeric",
+    month: "long",
+    timeZone: "UTC",
+  }).format(new Date(Date.UTC(2024, month - 1, day)))
+}
+
+export function timeLabel(person: Birthday) {
+  const { hour, minute } = birthdayParts(person)
+  return new Intl.DateTimeFormat("en-IN", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+    timeZone: "UTC",
+  }).format(new Date(Date.UTC(2024, 0, 1, hour, minute)))
+}
+
+export function countdownParts(target: number, now: Date) {
+  const secondsLeft = Math.max(0, Math.ceil((target - now.getTime()) / 1000))
+  return {
+    days: Math.floor(secondsLeft / 86400),
+    hours: Math.floor((secondsLeft % 86400) / 3600),
+    minutes: Math.floor((secondsLeft % 3600) / 60),
+    seconds: secondsLeft % 60,
+  }
 }

@@ -19,7 +19,7 @@ body {
   margin: 0;
   background: var(--page);
   color: var(--ink);
-  font-family: var(--font-geist), Arial, sans-serif;
+  font-family: var(--font-geist-sans), Arial, sans-serif;
 }
 button {
   font: inherit;
@@ -109,286 +109,10 @@ a:focus-visible {
   display: grid;
   gap: 20px;
 }
-.feature-card,
 .feature-placeholder {
-  min-height: 420px;
-  border-radius: 28px;
-  overflow: hidden;
-}
-.feature-placeholder {
-  background: var(--feature);
-}
-.feature-card {
-  display: grid;
-  grid-template-columns: minmax(0, 1.08fr) minmax(320px, 0.92fr);
-  background: var(--feature);
-  color: var(--feature-ink);
-  box-shadow: 0 22px 55px rgba(24, 43, 76, 0.13);
-}
-.feature-copy {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  padding: 48px 24px 42px 52px;
-}
-.feature-eyebrow {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  color: #bdccff;
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.16em;
-}
-.feature-copy h2 {
-  max-width: 620px;
-  margin: 31px 0 16px;
-  font-size: clamp(42px, 5.3vw, 72px);
-  font-weight: 760;
-  line-height: 1;
-  letter-spacing: -0.07em;
-}
-.feature-description {
-  max-width: 390px;
-  margin: 0;
-  color: #d8e1f2;
-  font-size: 16px;
-  line-height: 1.55;
-}
-.countdown {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 13px;
-  margin-top: auto;
-  padding-top: 35px;
-}
-.countdown-unit {
-  min-width: 68px;
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-}
-.countdown-unit strong {
-  font-size: 33px;
-  font-weight: 680;
-  line-height: 1.1;
-  letter-spacing: -0.06em;
-  font-variant-numeric: tabular-nums;
-}
-.countdown-unit span {
-  color: #bbc9e7;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-.wish-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-  min-height: 48px;
-  margin-top: auto;
-  padding: 0 20px;
-  border: 0;
-  border-radius: 999px;
-  background: #fff;
-  color: #193060;
-  font-weight: 750;
-  cursor: pointer;
-  transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease;
-}
-.wish-button:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 12px 25px rgba(7, 17, 49, 0.25);
-}
-.feature-art {
-  position: relative;
-  display: grid;
-  place-items: center;
-  overflow: hidden;
-  background: #294a98;
-}
-.feature-card-today .feature-art {
-  background: #385bc3;
-}
-.feature-art::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  opacity: 0.16;
-  background-image: radial-gradient(#fff 1px, transparent 1px);
-  background-size: 22px 22px;
-}
-.feature-orbit {
-  position: absolute;
-  width: 380px;
-  aspect-ratio: 1;
-  border: 1px solid rgba(255, 255, 255, 0.28);
-  border-radius: 50%;
-}
-.orbit-one {
-  transform: translate(24%, -20%);
-}
-.orbit-two {
-  width: 520px;
-  transform: translate(15%, 6%);
-}
-.date-medallion {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  width: 248px;
-  aspect-ratio: 1;
-  border: 1px solid rgba(255, 255, 255, 0.7);
-  border-radius: 50%;
-  background: #fff;
-  color: #254a9d;
-  box-shadow:
-    0 22px 50px rgba(12, 29, 69, 0.22),
-    0 0 0 13px rgba(255, 255, 255, 0.13);
-  transform: rotate(-9deg);
-}
-.date-medallion span {
-  font-size: 31px;
-  font-weight: 700;
-  letter-spacing: -0.06em;
-  text-transform: uppercase;
-}
-.date-medallion strong {
-  font-size: 110px;
-  font-weight: 800;
-  line-height: 0.88;
-  letter-spacing: -0.11em;
-}
-.feature-card-today .date-medallion {
-  position: absolute;
-  top: 36px;
-  right: 45px;
-  width: 114px;
-  transform: rotate(11deg);
-  box-shadow: 0 9px 24px rgba(12, 29, 69, 0.18);
-}
-.feature-card-today .date-medallion span {
-  font-size: 18px;
-}
-.feature-card-today .date-medallion strong {
-  font-size: 51px;
-}
-.feature-art-note {
-  position: absolute;
-  bottom: 24px;
-  right: 28px;
-  color: #dce5ff;
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.18em;
-}
-.confetti {
-  position: absolute;
-  display: block;
-  width: 8px;
-  height: 26px;
-  border-radius: 10px;
-  background: #d8e2ff;
-  opacity: 0.85;
-}
-.confetti-one {
-  top: 13%;
-  left: 18%;
-  transform: rotate(31deg);
-}
-.confetti-two {
-  top: 24%;
-  right: 22%;
-  height: 15px;
-  transform: rotate(-24deg);
-}
-.confetti-three {
-  bottom: 22%;
-  left: 16%;
-  height: 19px;
-  transform: rotate(-38deg);
-}
-.confetti-four {
-  bottom: 28%;
-  right: 14%;
-  transform: rotate(27deg);
-}
-.celebration-cake {
-  position: absolute;
-  bottom: 70px;
-  left: 50%;
-  width: 250px;
-  height: 210px;
-  transform: translateX(-50%);
-}
-.cake-body {
-  position: absolute;
-  bottom: 16px;
-  left: 25px;
-  width: 200px;
-  height: 106px;
-  border-radius: 14px 14px 32px 32px;
-  background: linear-gradient(#b9c9fc 0 45%, #8eacef 45% 52%, #d8e1ff 52%);
-  box-shadow:
-    inset -22px 0 0 rgba(27, 64, 150, 0.13),
-    0 16px 25px rgba(17, 37, 92, 0.25);
-}
-.cake-icing {
-  position: absolute;
-  z-index: 1;
-  bottom: 106px;
-  left: 21px;
-  width: 208px;
-  height: 40px;
-  border-radius: 50%;
-  background: #f8f9ff;
-  box-shadow: 0 8px 0 #dbe4ff;
-}
-.cake-plate {
-  position: absolute;
-  bottom: 5px;
-  left: 4px;
-  width: 242px;
-  height: 25px;
-  border-radius: 50%;
-  background: #e1e9ff;
-  box-shadow: 0 8px 0 rgba(23, 54, 136, 0.3);
-}
-.cake-candle {
-  position: absolute;
-  z-index: 2;
-  bottom: 138px;
-  left: 119px;
-  width: 12px;
-  height: 49px;
-  border-radius: 3px;
-  background: repeating-linear-gradient(35deg, #6b8ee5 0 8px, #fff 8px 16px);
-}
-.cake-flame {
-  position: absolute;
-  bottom: 54px;
-  left: 0;
-  width: 12px;
-  height: 20px;
-  border-radius: 70% 20% 70% 70%;
-  background: #ffd36b;
-  box-shadow: 0 0 18px #ffd36b;
-  transform: rotate(45deg);
-  transition:
-    opacity 0.3s ease,
-    transform 0.3s ease;
-}
-.wish-made .cake-flame {
-  opacity: 0;
-  transform: rotate(45deg) scale(0.2);
+  min-height: 540px;
+  border-radius: 30px;
+  background: #182944;
 }
 .calendar-section {
   padding: 82px 0 100px;
@@ -422,10 +146,9 @@ a:focus-visible {
 }
 .birthday-row {
   display: grid;
-  grid-template-columns: 36px 50px minmax(130px, 1fr) minmax(
-      125px,
-      0.6fr
-    ) minmax(140px, 0.55fr) 20px;
+  grid-template-columns:
+    36px 50px minmax(130px, 1fr) minmax(125px, 0.6fr)
+    minmax(140px, 0.55fr) 20px;
   align-items: center;
   gap: 17px;
   min-height: 84px;
@@ -502,22 +225,6 @@ a:focus-visible {
   }
 }
 @media (max-width: 800px) {
-  .feature-card {
-    grid-template-columns: 1fr;
-  }
-  .feature-copy {
-    min-height: 345px;
-    padding: 38px 34px;
-  }
-  .feature-art {
-    min-height: 280px;
-  }
-  .feature-card-today .feature-art {
-    min-height: 325px;
-  }
-  .celebration-cake {
-    bottom: 47px;
-  }
   .birthday-row {
     grid-template-columns: 30px 44px minmax(100px, 1fr) minmax(105px, 0.6fr);
     gap: 12px;
@@ -555,57 +262,6 @@ a:focus-visible {
     margin: 19px 0 0;
     font-size: 14px;
   }
-  .feature-copy {
-    min-height: 340px;
-    padding: 32px 27px;
-  }
-  .feature-copy h2 {
-    margin-top: 22px;
-    font-size: clamp(43px, 11vw, 62px);
-  }
-  .feature-description {
-    font-size: 14px;
-  }
-  .countdown {
-    gap: 10px;
-  }
-  .countdown-unit {
-    min-width: 57px;
-  }
-  .countdown-unit strong {
-    font-size: 28px;
-  }
-  .feature-art {
-    min-height: 235px;
-  }
-  .feature-card-today .feature-art {
-    min-height: 285px;
-  }
-  .date-medallion {
-    width: 165px;
-  }
-  .date-medallion span {
-    font-size: 22px;
-  }
-  .date-medallion strong {
-    font-size: 73px;
-  }
-  .feature-card-today .date-medallion {
-    top: 24px;
-    right: 24px;
-    width: 88px;
-  }
-  .feature-card-today .date-medallion span {
-    font-size: 14px;
-  }
-  .feature-card-today .date-medallion strong {
-    font-size: 40px;
-  }
-  .celebration-cake {
-    bottom: 26px;
-    transform: translateX(-50%) scale(0.85);
-    transform-origin: bottom center;
-  }
   .calendar-section {
     padding: 65px 0 75px;
   }
@@ -635,33 +291,5 @@ a:focus-visible {
   .site-footer {
     flex-direction: column;
     gap: 7px;
-  }
-}
-@media (prefers-reduced-motion: no-preference) {
-  .feature-card-today .confetti {
-    animation: float 4s ease-in-out infinite alternate;
-  }
-  .feature-card-today .confetti-two {
-    animation-delay: -1s;
-  }
-  .feature-card-today .confetti-three {
-    animation-delay: -2s;
-  }
-  .feature-card-today .confetti-four {
-    animation-delay: -3s;
-  }
-  .cake-flame {
-    animation: flicker 1.7s ease-in-out infinite alternate;
-  }
-}
-@keyframes float {
-  to {
-    translate: 0 -12px;
-    rotate: 14deg;
-  }
-}
-@keyframes flicker {
-  to {
-    scale: 0.8 1.15;
   }
 }

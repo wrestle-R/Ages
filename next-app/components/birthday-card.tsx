@@ -1,7 +1,8 @@
 "use client"
 
 import { ArrowUpRight, Sparkle } from "@phosphor-icons/react"
-import { useState } from "react"
+import dynamic from "next/dynamic"
+import { useState, type CSSProperties } from "react"
 import type { Birthday } from "@/lib/birthdays-data"
 import {
   birthdayParts,
@@ -11,96 +12,137 @@ import {
   timeLabel,
   turningAge,
 } from "@/lib/birthday-utils"
+import "./birthday-card.css"
 
-type Props = {
-  person: Birthday
-  now: Date
-  today: boolean
-}
+const BirthdayCake = dynamic(() => import("./birthday-cake"), {
+  ssr: false,
+  loading: () => (
+    <div className="cake-loading" aria-hidden="true">
+      <span />
+      <span />
+      <span />
+    </div>
+  ),
+})
+
+type Props = { person: Birthday; now: Date; today: boolean }
 
 export function BirthdayCard({ person, now, today }: Props) {
   const [wishMade, setWishMade] = useState(false)
+  const [celebration, setCelebration] = useState(0)
   const { day, month } = birthdayParts(person)
   const countdown = countdownParts(nextBirthdayMoment(person, now), now)
+  const age = turningAge(person, now, today)
   const monthLabel = new Intl.DateTimeFormat("en-IN", {
     month: "short",
     timeZone: "UTC",
   }).format(new Date(Date.UTC(2024, month - 1, 1)))
 
+  function makeWish() {
+    if (!wishMade) setCelebration((value) => value + 1)
+    setWishMade((value) => !value)
+  }
+
   return (
-    <article className={`feature-card ${today ? "feature-card-today" : ""}`}>
-      <div className="feature-copy">
-        <div className="feature-eyebrow">
-          <Sparkle size={18} weight="fill" aria-hidden="true" />
-          <span>{today ? "TODAY IS THE DAY" : "UP NEXT"}</span>
-        </div>
-        <h2>
-          {today ? (
-            <>
-              Happy birthday,
-              <br />
-              {person.name}.
-            </>
-          ) : (
-            <>
-              {person.name}&apos;s
-              <br />
-              big day.
-            </>
-          )}
-        </h2>
-        <p className="feature-description">
-          {today
-            ? `Here's to ${turningAge(person, now, true)} years of ${person.name}. Make a wish and enjoy your day.`
-            : `${dateLabel(person)} is worth looking forward to. ${person.name} turns ${turningAge(person, now)} next.`}
-        </p>
-
-        {today ? (
-          <button
-            className="wish-button"
-            onClick={() => setWishMade((made) => !made)}
-          >
-            {wishMade ? "Light candles again" : "Make a wish"}
-            <ArrowUpRight size={18} weight="bold" aria-hidden="true" />
-          </button>
-        ) : (
-          <div
-            className="countdown"
-            aria-label={`Countdown to ${person.name}'s birthday`}
-          >
-            {Object.entries(countdown).map(([unit, value]) => (
-              <div className="countdown-unit" key={unit}>
-                <strong>{String(value).padStart(2, "0")}</strong>
-                <span>{unit}</span>
-              </div>
-            ))}
-          </div>
-        )}
+    <article
+      className={`birthday-feature ${today ? "birthday-feature-today" : ""} ${wishMade ? "birthday-wished" : ""}`}
+    >
+      <div className="birthday-feature-topline">
+        <span className="birthday-status">
+          <Sparkle size={15} weight="fill" aria-hidden="true" />
+          {today ? "A DAY JUST FOR YOU" : "THE NEXT CELEBRATION"}
+        </span>
+        <span className="birthday-edition">Ages birthday club</span>
       </div>
-
-      <div className="feature-art" aria-hidden="true">
-        <div className="feature-orbit orbit-one" />
-        <div className="feature-orbit orbit-two" />
-        <span className="confetti confetti-one" />
-        <span className="confetti confetti-two" />
-        <span className="confetti confetti-three" />
-        <span className="confetti confetti-four" />
-        <div className="date-medallion">
-          <span>{monthLabel}</span>
-          <strong>{String(day).padStart(2, "0")}</strong>
-        </div>
-        {today && (
-          <div className={`celebration-cake ${wishMade ? "wish-made" : ""}`}>
-            <div className="cake-candle">
-              <span className="cake-flame" />
-            </div>
-            <div className="cake-icing" />
-            <div className="cake-body" />
-            <div className="cake-plate" />
+      <div className="birthday-feature-content">
+        <div className="birthday-feature-copy">
+          <p className="birthday-greeting">
+            {today ? "Happy birthday," : "The countdown is on for"}
+          </p>
+          <h2>
+            {person.name}
+            <span>.</span>
+          </h2>
+          <p className="birthday-message">
+            {today
+              ? `A little older. A little more iconic. Here's to ${age} years of you.`
+              : `Another trip around the sun. Another very good reason to celebrate.`}
+          </p>
+          <div className="birthday-details">
+            <span>{dateLabel(person)}</span>
+            <i aria-hidden="true" />
+            <span>{today ? `${age} looks good on you` : `Turning ${age}`}</span>
           </div>
-        )}
-        <span className="feature-art-note">
-          {today ? "MAKE IT COUNT" : `BORN AT ${timeLabel(person)}`}
+          {today ? (
+            <div className="birthday-wish-controls">
+              <button className="birthday-wish-button" onClick={makeWish}>
+                <Sparkle size={18} weight="fill" aria-hidden="true" />
+                {wishMade ? "One more wish?" : "Make a wish"}
+                <ArrowUpRight size={19} aria-hidden="true" />
+              </button>
+              <p className="birthday-wish-note" role="status">
+                {wishMade
+                  ? "Wish made. This one's going to be a good year."
+                  : "Close your eyes. We'll take care of the candles."}
+              </p>
+            </div>
+          ) : (
+            <div
+              className="birthday-countdown"
+              aria-label={`Time until ${person.name}'s birthday`}
+            >
+              {Object.entries(countdown).map(([unit, value]) => (
+                <div key={unit}>
+                  <strong>{String(value).padStart(2, "0")}</strong>
+                  <span>{unit}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        <div className="birthday-stage">
+          <div className="birthday-stage-halo" aria-hidden="true" />
+          <div className="birthday-date-stamp">
+            <span>{monthLabel}</span>
+            <strong>{String(day).padStart(2, "0")}</strong>
+            <span>save the date</span>
+          </div>
+          <BirthdayCake extinguished={today && wishMade} />
+          <span className="birthday-stage-caption">
+            {wishMade
+              ? "a wish for the year ahead"
+              : "a little slice of happiness"}
+          </span>
+          {today && wishMade && (
+            <div
+              className="birthday-confetti"
+              key={celebration}
+              aria-hidden="true"
+            >
+              {Array.from({ length: 24 }, (_, i) => (
+                <span
+                  key={i}
+                  style={
+                    {
+                      "--x": `${(i * 43) % 100}%`,
+                      "--delay": `${(i % 6) * 0.06}s`,
+                      "--spin": `${(i % 2 ? 1 : -1) * (120 + i * 17)}deg`,
+                    } as CSSProperties
+                  }
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+      <div className="birthday-feature-footer">
+        <span>
+          {today
+            ? "THE WORLD GOT LUCKIER ON THIS DAY."
+            : "GOOD THINGS ARE WORTH THE WAIT."}
+        </span>
+        <span>
+          {timeLabel(person)} <span className="birthday-timezone">IST</span>
         </span>
       </div>
     </article>

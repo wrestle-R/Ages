@@ -13,6 +13,7 @@ import {
   turningAge,
 } from "@/lib/birthday-utils"
 import "./birthday-card.css"
+import { LiveAge } from "./birthday-metrics"
 
 const BirthdayCake = dynamic(() => import("./birthday-cake"), {
   ssr: false,
@@ -25,9 +26,9 @@ const BirthdayCake = dynamic(() => import("./birthday-cake"), {
   ),
 })
 
-type Props = { person: Birthday; now: Date; today: boolean }
+type Props = { person: Birthday; now: Date; today: boolean; shared?: boolean }
 
-export function BirthdayCard({ person, now, today }: Props) {
+export function BirthdayCard({ person, now, today, shared = false }: Props) {
   const [wishMade, setWishMade] = useState(false)
   const [celebration, setCelebration] = useState(0)
   const { day, month } = birthdayParts(person)
@@ -45,7 +46,8 @@ export function BirthdayCard({ person, now, today }: Props) {
 
   return (
     <article
-      className={`birthday-feature ${today ? "birthday-feature-today" : ""} ${wishMade ? "birthday-wished" : ""}`}
+      className={`birthday-feature ${today ? "birthday-feature-today" : ""} ${wishMade ? "birthday-wished" : ""} ${shared ? "birthday-feature-shared" : ""}`}
+      aria-label={`${person.name}'s birthday card`}
     >
       <div className="birthday-feature-topline">
         <span className="birthday-status">
@@ -73,6 +75,7 @@ export function BirthdayCard({ person, now, today }: Props) {
             <i aria-hidden="true" />
             <span>{today ? `${age} looks good on you` : `Turning ${age}`}</span>
           </div>
+          {!today && <LiveAge person={person} now={now} />}
           {today ? (
             <div className="birthday-wish-controls">
               <button className="birthday-wish-button" onClick={makeWish}>

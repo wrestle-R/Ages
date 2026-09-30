@@ -35,7 +35,7 @@ function BirthdayCake({ extinguished }: { extinguished: boolean }) {
 
     const scene = new THREE.Scene()
     const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 30)
-    camera.position.set(3.2, 3.1, 5.6)
+    camera.position.set(1.8, 3.1, 6.1)
     camera.lookAt(0, 0.95, 0)
     const cake = new THREE.Group()
     cake.rotation.y = -0.25
@@ -128,7 +128,7 @@ function BirthdayCake({ extinguished }: { extinguished: boolean }) {
     cylinder(1.08, 0.72, 0.48, blue)
     cylinder(1.09, 0.08, 0.37, cream)
     cylinder(1.09, 0.08, 0.57, cream)
-    cylinder(1.08, 0.13, 0.86, icing)
+    cylinder(1.095, 0.13, 0.86, icing)
     ring(1.065, 0.055, 0.89, icing)
     cylinder(0.78, 0.5, 1.14, cream)
     cylinder(0.79, 0.11, 1.41, icing)
@@ -173,9 +173,9 @@ function BirthdayCake({ extinguished }: { extinguished: boolean }) {
     const flames = new THREE.Group()
     cake.add(flames)
     const candlePositions = [
-      [-0.38, 0.1],
-      [0.03, -0.3],
-      [0.39, 0.1],
+      [-0.38, 0.2],
+      [-0.12, -0.3],
+      [0.39, 0.2],
     ]
     candlePositions.forEach(([x, z], index) => {
       const height = index === 1 ? 0.59 : 0.45
@@ -232,11 +232,12 @@ function BirthdayCake({ extinguished }: { extinguished: boolean }) {
     key.castShadow = true
     key.shadow.mapSize.set(1024, 1024)
     key.shadow.normalBias = 0.025
+    key.shadow.radius = 3
     scene.add(key)
     const rim = new THREE.DirectionalLight("#80acff", 3)
     rim.position.set(3, 2, -3)
     scene.add(rim)
-    const shadowMaterial = new THREE.ShadowMaterial({ opacity: 0.24 })
+    const shadowMaterial = new THREE.ShadowMaterial({ opacity: 0.14 })
     const floor = mesh(
       new THREE.PlaneGeometry(12, 12),
       shadowMaterial,
@@ -249,16 +250,18 @@ function BirthdayCake({ extinguished }: { extinguished: boolean }) {
 
     const motion = window.matchMedia("(prefers-reduced-motion: reduce)")
     let visible = true
+    let contextAvailable = true
     let frame = 0
     let target = -0.25
     const render = () => {
+      if (!contextAvailable) return
       flames.visible = !lightsOut.current
       renderer.render(scene, camera)
     }
     redraw.current = render
     const animate = (time: number) => {
       frame = 0
-      if (!visible || document.hidden) return
+      if (!contextAvailable || !visible || document.hidden) return
       cake.rotation.y += (target - cake.rotation.y) * 0.045
       if (!motion.matches) {
         flames.scale.y = 1 + Math.sin(time * 0.005) * 0.014
@@ -295,12 +298,22 @@ function BirthdayCake({ extinguished }: { extinguished: boolean }) {
     }
     const contextLost = (event: Event) => {
       event.preventDefault()
+      contextAvailable = false
       cancelAnimationFrame(frame)
       container.dataset.unavailable = "true"
+    }
+    const contextRestored = () => {
+      contextAvailable = true
+      delete container.dataset.unavailable
+      restart()
     }
     container.addEventListener("pointermove", pointerMove)
     container.addEventListener("pointerleave", pointerLeave)
     renderer.domElement.addEventListener("webglcontextlost", contextLost)
+    renderer.domElement.addEventListener(
+      "webglcontextrestored",
+      contextRestored
+    )
     document.addEventListener("visibilitychange", restart)
     motion.addEventListener("change", restart)
     restart()
@@ -315,20 +328,21 @@ function BirthdayCake({ extinguished }: { extinguished: boolean }) {
       document.removeEventListener("visibilitychange", restart)
       motion.removeEventListener("change", restart)
       renderer.domElement.removeEventListener("webglcontextlost", contextLost)
+      renderer.domElement.removeEventListener(
+        "webglcontextrestored",
+        contextRestored
+      )
       geometries.forEach((geometry) => geometry.dispose())
       materials.forEach((material) => material.dispose())
       shadowMaterial.dispose()
+      key.shadow.dispose()
       renderer.dispose()
       renderer.domElement.remove()
     }
   }, [])
 
   return (
-    <div
-      className="cake-scene"
-      ref={host}
-      aria-hidden="true"
-    >
+    <div className="cake-scene" ref={host} aria-hidden="true">
       <div className={`cake-fallback ${extinguished ? "is-extinguished" : ""}`}>
         <span className="fallback-candle" />
         <span className="fallback-tier top" />

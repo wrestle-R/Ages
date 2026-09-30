@@ -1,15 +1,14 @@
 "use client"
 
-import { ArrowRight, Cake, Clock } from "@phosphor-icons/react"
+import { Cake, Clock } from "@phosphor-icons/react"
 import { useEffect, useState } from "react"
 import { BirthdayCard } from "@/components/birthday-card"
 import { birthdays } from "@/lib/birthdays-data"
+import { BirthdayMetrics } from "./birthday-metrics"
 import {
   dateLabel,
+  groupBirthdays,
   isBirthdayToday,
-  nextBirthdayMoment,
-  timeLabel,
-  turningAge,
 } from "@/lib/birthday-utils"
 
 export function BirthdayCountdownClient() {
@@ -18,27 +17,16 @@ export function BirthdayCountdownClient() {
   useEffect(() => {
     const update = () => setNow(new Date())
     update()
-    const interval = window.setInterval(update, 1000)
+    const interval = window.setInterval(update, 100)
     return () => window.clearInterval(interval)
   }, [])
 
-  const sorted = now
-    ? [...birthdays].sort(
-        (a, b) => nextBirthdayMoment(a, now) - nextBirthdayMoment(b, now)
-      )
-    : [...birthdays]
-  const today = now
-    ? sorted.filter((person) => isBirthdayToday(person, now))
-    : []
-  const featured = today.length ? today : sorted.slice(0, 1)
-  const calendar = now
-    ? [
-        ...today,
-        ...sorted.filter(
-          (person) => !today.some((celebrant) => celebrant.name === person.name)
-        ),
-      ]
-    : sorted
+  const groups = groupBirthdays(birthdays, now)
+  const featured = groups[0] ?? []
+  const celebrating =
+    !!now && !!featured[0] && isBirthdayToday(featured[0], now)
+  const shared = featured.length > 1
+  const calendar = groups.flat()
   const currentDate = now
     ? new Intl.DateTimeFormat("en-IN", {
         day: "numeric",
@@ -78,17 +66,37 @@ export function BirthdayCountdownClient() {
           </p>
         </section>
 
+        <div className="feature-actions">
+          <span>
+            <i aria-hidden="true" /> Every second counts.
+          </span>
+        </div>
         <section
-          className="featured-section"
-          aria-label={today.length ? "Birthdays today" : "Next birthday"}
+          className={`featured-section ${now && shared ? "featured-section-shared" : ""}`}
+          aria-label={celebrating ? "Birthdays today" : "Next birthdays"}
         >
+          {now && shared && (
+            <div className="shared-celebration-heading">
+              <p>
+                {celebrating ? "Today" : "Coming up"} · {dateLabel(featured[0])}{" "}
+                · {featured.length} birthdays
+              </p>
+              <h2>
+                {featured.length === 2
+                  ? "Double the birthday joy."
+                  : "More birthdays. More joy."}
+              </h2>
+              <span>A shared day. A celebration for each of you.</span>
+            </div>
+          )}
           {now ? (
             featured.map((person) => (
               <BirthdayCard
                 key={person.name}
                 person={person}
                 now={now}
-                today={today.length > 0}
+                today={celebrating}
+                shared={shared}
               />
             ))
           ) : (
@@ -108,36 +116,52 @@ export function BirthdayCountdownClient() {
               <p className="section-kicker">THE PEOPLE</p>
               <h2 id="calendar-heading">The birthday list</h2>
             </div>
-            <span>{birthdays.length} good reasons to celebrate</span>
+            <span>Growing older, one moment at a time.</span>
           </div>
 
           <div className="birthday-list">
-            {calendar.map((person, index) => (
+            {groups.map((group) => (
               <div
-                className={`birthday-row ${now && isBirthdayToday(person, now) ? "birthday-row-today" : ""}`}
-                key={person.name}
+                className={`birthday-date-group ${group.length > 1 ? "birthday-date-group-shared" : ""}`}
+                key={group[0].date.slice(5)}
               >
-                <span className="row-index">
-                  {String(index + 1).padStart(2, "0")}
-                </span>
-                <div className="row-avatar" aria-hidden="true">
-                  {person.name.slice(0, 1)}
-                </div>
-                <div className="row-name">
-                  <h3>{person.name}</h3>
-                  <span>
-                    {now && isBirthdayToday(person, now)
-                      ? "Birthday today"
-                      : `Turning ${now ? turningAge(person, now) : "..."}`}
-                  </span>
-                </div>
-                <span className="row-date">{dateLabel(person)}</span>
-                <span className="row-time">{timeLabel(person)} IST</span>
-                <ArrowRight
-                  className="row-arrow"
-                  size={18}
-                  aria-hidden="true"
-                />
+                {group.length > 1 && (
+                  <div className="shared-date-label">
+                    <Cake size={17} aria-hidden="true" />
+                    <strong>{dateLabel(group[0])}</strong>
+                    <span>{group.length} birthdays, one special day</span>
+                  </div>
+                )}
+                {group.map((person) => (
+                  <div
+                    className={`birthday-row ${now && isBirthdayToday(person, now) ? "birthday-row-today" : ""}`}
+                    key={person.name}
+                  >
+                    <div className="birthday-row-heading">
+                      <span className="row-index">
+                        {String(calendar.indexOf(person) + 1).padStart(2, "0")}
+                      </span>
+                      <div className="row-avatar" aria-hidden="true">
+                        {person.name.slice(0, 1)}
+                      </div>
+                      <div className="row-name">
+                        <h3>{person.name}</h3>
+                        <span>
+                          {now && isBirthdayToday(person, now)
+                            ? "Birthday today"
+                            : `Born in ${person.date.slice(0, 4)}`}
+                        </span>
+                      </div>
+                    </div>
+                    {now ? (
+                      <BirthdayMetrics person={person} now={now} />
+                    ) : (
+                      <div className="metrics-placeholder">
+                        Loading live counters…
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
             ))}
           </div>
